@@ -1,6 +1,6 @@
 # Collaborative Study Material & Quiz Platform (CSQP)
 
-[![Repository](https://img.shields.io/badge/GitHub-Repository-blue?logo=github)](https://github.com/Prober55/Collaborative-Student-Quiz-Platform)
+[![Repository](https://img.shields.io/badge/GitHub-Repository-blue?logo=github)](https://github.com/CSQP-Team4/Collaborative-Student-Quiz-Platform)
 [![Stack](https://img.shields.io/badge/Stack-MERN%20%2B%20Python-green)](#tech-stack)
 [![SRS Version](https://img.shields.io/badge/SRS-v1.0-orange)](docs/)
 
