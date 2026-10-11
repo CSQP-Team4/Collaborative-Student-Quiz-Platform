@@ -1,0 +1,37 @@
+# CSQP-4: Pull request checks
+# Enforces the team workflow: every PR title and branch must carry its Jira
+# story key (e.g. CSQP-7) so GitHub for Atlassian links the work to Jira.
+
+name: PR checks
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  jira-key:
+    name: Jira key in PR title and branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for CSQP-<number>
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          BRANCH: ${{ github.head_ref }}
+        run: |
+          status=0
+          if echo "$PR_TITLE" | grep -Eq 'CSQP-[0-9]+'; then
+            echo "PR title OK: $PR_TITLE"
+          else
+            echo "::error::PR title must contain the Jira key, e.g. 'CSQP-7 College email registration'"
+            status=1
+          fi
+          if echo "$BRANCH" | grep -Eq 'CSQP-[0-9]+'; then
+            echo "Branch OK: $BRANCH"
+          else
+            echo "::error::Branch name must contain the Jira key, e.g. 'CSQP-7-registration'"
+            status=1
+          fi
+          exit $status
