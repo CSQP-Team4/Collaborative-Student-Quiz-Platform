@@ -8,14 +8,58 @@ A full-stack collaborative learning and assessment platform designed for student
 
 ---
 
-## - Team 4 - Contributions
+## 📌 Team 4 - Member Profiles & Jira Task Ownership
 
-| Name | SRN | Contribution Area |
-| :--- | :--- | :--- |
-| **Harshith R Reddy** | `PES2UG24CS188` | Introduction & External Interface Requirements |
-| **Kritika Mahapatra** | `PES2UG24CS239` | Overall Description & UML Use-Case Diagrams |
-| **Krishna Manoj** | `PES2UG24CS236` | System Features (Functional Requirements), Quality Attributes & Acceptance Tests |
-| **John S Thomas** | `PES2UG24CS207` | Non-Functional Requirements, Security & Requirements Traceability Matrix (RTM) |
+| Member | SRN | Primary Role | Jira Stories Owned | Sprint 1 Focus | Sprint 2 Focus |
+| :--- | :--- | :--- | :---: | :--- | :--- |
+| **John S Thomas** | `PES2UG24CS207` | Security & Performance QA / Auth Lead | **11** | Email registration, JWT login, refresh tokens, RBAC middleware, account lockout | Anti-cheat engine, single active attempt, password reset, latency p90 <= 2s, WCAG 2.1 AA, security checklist |
+| **Krishna Manoj** | `PES2UG24CS236` | Test Engineer / Core Engine Dev | **8** | Project scaffolding, Mongoose schemas, error handling/logging, TLS 1.2+ HTTPS | Bulk question import (CSV/Excel), quiz assembly, countdown timer, instant auto-grading |
+| **Harshith R Reddy** | `PES2UG24CS188` | QA Lead / CI & Analytics Dev | **9** | GitHub Actions CI, test seed fixtures, Python analytics skeleton, Auth UI | Student dashboard, instructor class analytics, opt-in leaderboard, report export, 99.5% uptime |
+| **Kritika Mahapatra** | `PES2UG24CS239` | Test Engineer / Content & UI Dev | **9** | Material upload & limits, material search/filter, version history | Question types (MCQ/TF/Short), question contribution, instructor approval queue, subjective grading queue, ratings & comments, 5K user scale |
+
+---
+
+## 🎯 Agile Project Management (Jira + GitHub Workflow)
+
+The team manages requirements, sprints, and story tracking through **Jira Software**, fully integrated with this GitHub repository via smart commits and pull requests.
+
+- **Jira Workspace**: [CSQP Jira Project](https://harshithrreddy006.atlassian.net) (Key: `CSQP`)
+- **Total Tracked Stories**: 37 stories across Practice Sprint, Sprint 1, and Sprint 2.
+- **Workflow Automation**: Every feature branch and commit starts with the Jira issue key (e.g. `CSQP-7-registration`, `CSQP-7 add registration API`), automatically linking GitHub pull requests, commits, and reviews directly to the corresponding Jira story.
+
+### 🗓️ Sprint Schedule & Roadmap
+
+```text
+ 12 Oct – 16 Oct             19 Oct – 23 Oct             26 Oct – 30 Oct
+ [Practice Sprint] ────────► [Sprint 1 Execution] ─────► [Sprint 2 Execution]
+ • Project Scaffolding       • Auth & Security Stack     • Timed Quiz & Anti-Cheat
+ • GitHub Actions CI         • Study Material Sharing    • Class Analytics & NFRs
+                             • 1-Min Demo Video          • 2-Min Demo Video
+```
+
+#### 1. Practice Sprint (12 Oct 2026 – 16 Oct 2026)
+* **Goal**: Technical foundation, dev environment alignment, and automated CI pipeline.
+* **Key Deliverables**:
+  - `CSQP-1`: Full-stack scaffolding (React SPA, Express API, MongoDB connection, health check) — *Krishna Manoj*
+  - `CSQP-4`: GitHub Actions CI pipeline with automated linting and unit test execution — *Harshith R Reddy*
+
+#### 2. Sprint 1 (19 Oct 2026 – 23 Oct 2026)
+* **Goal**: Working login-to-upload vertical slice: complete authentication & RBAC, study material upload, search, and versioning.
+* **Stories in Scope (16 stories)**:
+  - **Auth & Security Stack (John)**: `CSQP-7` (Email registration & verification), `CSQP-8` (JWT login), `CSQP-9` (Refresh-token rotation), `CSQP-10` (RBAC middleware), `CSQP-11` (Account lockout & audit logging).
+  - **Core Backend & Scaffolding (Krishna)**: `CSQP-1` (Scaffolding), `CSQP-2` (Mongoose collection schemas), `CSQP-3` (Centralized error handler & logger), `CSQP-34` (TLS 1.2+ HTTPS enforcement).
+  - **CI, Testing & Analytics Skeleton (Harshith)**: `CSQP-4` (CI pipeline), `CSQP-5` (Test fixtures & seeds), `CSQP-6` (Python analytics skeleton), `CSQP-12` (Auth UI & role dashboard shell).
+  - **Study Materials Engine (Kritika)**: `CSQP-13` (Material upload with size/type checks), `CSQP-14` (Multi-criteria search & filtering), `CSQP-15` (Material revision history).
+* **Deliverable**: Sprint 1 Demo Video (1 minute).
+
+#### 3. Sprint 2 (26 Oct 2026 – 30 Oct 2026)
+* **Goal**: Curated question bank, timed anti-cheat quizzes with auto-grading, analytics dashboards, and non-functional requirement (NFR) validation.
+* **Stories in Scope (21 stories)**:
+  - **Anti-Cheat, Latency & Security Hardening (John)**: `CSQP-23` (Anti-cheat: clipboard lock & key stripping), `CSQP-24` (Single active attempt), `CSQP-31` (Password reset), `CSQP-32` (P90 latency <= 2s), `CSQP-33` (WCAG 2.1 AA compliance), `CSQP-36` (Data protection & security audit checklist).
+  - **Quiz Assembly & Auto-Grading (Krishna)**: `CSQP-19` (Bulk question import via CSV/Excel), `CSQP-20` (Quiz assembly & random sampling), `CSQP-21` (Countdown timer with auto-submit), `CSQP-22` (Instant objective auto-grading).
+  - **Analytics Dashboards & Reports (Harshith)**: `CSQP-27` (Student performance dashboard), `CSQP-28` (Instructor class analytics), `CSQP-29` (Opt-in leaderboard), `CSQP-30` (PDF/CSV report export), `CSQP-35` (99.5% uptime monitoring).
+  - **Question Bank & Peer Review (Kritika)**: `CSQP-16` (MCQ, True/False, Short Answer types), `CSQP-17` (Student question submission), `CSQP-18` (Instructor approval queue), `CSQP-25` (Subjective answer grading queue), `CSQP-26` (Ratings & comments on materials), `CSQP-37` (5,000 user / 500 concurrent load validation).
+* **Deliverable**: Sprint 2 Final Demo Video (2 minutes) + Part-2 Final Package.
 
 ---
 
