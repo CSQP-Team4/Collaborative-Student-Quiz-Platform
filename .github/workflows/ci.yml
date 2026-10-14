@@ -1,0 +1,146 @@
+# CSQP-4: Continuous Integration
+# Runs lint + tests for every component on each push / pull request to main.
+# Each job detects whether its component exists yet, so CI stays green while
+# the project is still being scaffolded (CSQP-1) and starts enforcing checks
+# automatically as soon as package.json / requirements.txt are added.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  server:
+    name: Server (Node/Express)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    env:
+      CI: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect server project
+        id: detect
+        run: |
+          if [ -f package.json ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::server/package.json not found yet - skipping server checks"
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.detect.outputs.present == 'true'
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        if: steps.detect.outputs.present == 'true'
+        run: if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+      - name: Lint
+        if: steps.detect.outputs.present == 'true'
+        run: npm run lint --if-present
+
+      - name: Test (Jest)
+        if: steps.detect.outputs.present == 'true'
+        run: npm test --if-present
+
+  client:
+    name: Client (React)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
+    env:
+      CI: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect client project
+        id: detect
+        run: |
+          if [ -f package.json ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::client/package.json not found yet - skipping client checks"
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.detect.outputs.present == 'true'
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        if: steps.detect.outputs.present == 'true'
+        run: if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+      - name: Lint
+        if: steps.detect.outputs.present == 'true'
+        run: npm run lint --if-present
+
+      - name: Test
+        if: steps.detect.outputs.present == 'true'
+        run: npm test --if-present
+
+      - name: Build
+        if: steps.detect.outputs.present == 'true'
+        run: npm run build --if-present
+
+  analytics:
+    name: Analytics (Python)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: analytics
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect analytics project
+        id: detect
+        run: |
+          if [ -f requirements.txt ] || ls *.py >/dev/null 2>&1 || [ -d app ] || [ -d src ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No Python code in analytics/ yet - skipping analytics checks"
+          fi
+
+      - uses: actions/setup-python@v5
+        if: steps.detect.outputs.present == 'true'
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        if: steps.detect.outputs.present == 'true'
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install pytest flake8
+
+      - name: Lint (syntax errors and undefined names)
+        if: steps.detect.outputs.present == 'true'
+        run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Test (pytest)
+        if: steps.detect.outputs.present == 'true'
+        run: |
+          set +e
+          python -m pytest -q
+          code=$?
+          # Exit code 5 = no tests collected yet; treat as pass until tests exist.
+          if [ "$code" -eq 5 ]; then echo "::notice::No Python tests found yet"; exit 0; fi
+          exit $code
