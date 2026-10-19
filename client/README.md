@@ -1,16 +1,45 @@
-# React + Vite
+# CSQP Client (React + Vite)
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React 18 single-page app for the Collaborative Study Material & Quiz Platform.
 
-Currently, two official plugins are available:
+## Run
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+cd client
+npm install
+cp .env.example .env.local   # then edit if needed
+npm run dev                  # http://localhost:5173
+```
 
-## React Compiler
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Dev server with hot reload |
+| `npm test` | Unit and component tests (Vitest + Testing Library) |
+| `npm run lint` | Oxlint |
+| `npm run build` | Production build to `dist/` |
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Authentication (CSQP-12)
 
-## Expanding the Oxlint configuration
+Pages: `/login`, `/register`, `/verify-email`, and role dashboards
+`/student`, `/instructor`, `/admin`. After login each role lands on its own
+dashboard; other dashboards redirect back.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+- The access token is kept in memory only; the session is restored on reload
+  through the HttpOnly refresh-token cookie (`POST /api/auth/refresh`).
+- The API contract the backend must match is at the top of
+  `src/auth/authService.js`.
+
+### Demo mode (no backend)
+
+Until the auth API (CSQP-7, CSQP-8, CSQP-9) is merged, set
+`VITE_USE_MOCK_AUTH=true` in `.env.local`. Demo accounts (password `Password1`):
+`student@pes.edu`, `instructor@pes.edu`, `admin@pes.edu`.
+New registrations verify with code `123456`. Data stays in your browser only.
+
+## Environment variables
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `VITE_API_URL` | `http://localhost:5000/api` | Express API base URL |
+| `VITE_USE_MOCK_AUTH` | `false` | Use the in-browser demo auth |
+| `VITE_COLLEGE_EMAIL_SUFFIX` | `.edu` | Required ending for registration emails |
