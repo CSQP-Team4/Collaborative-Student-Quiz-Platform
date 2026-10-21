@@ -27,6 +27,12 @@ const questionSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    // CSQP-F-020: questions are tagged by subject, topic and difficulty.
+    topic: {
+      type: String,
+      required: true,
+      trim: true,
+    },
     difficulty: {
       type: String,
       enum: ['easy', 'medium', 'hard'],
