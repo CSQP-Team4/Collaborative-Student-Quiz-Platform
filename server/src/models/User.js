@@ -26,6 +26,29 @@ const userSchema = new mongoose.Schema(
       default: 'student',
       required: true,
     },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    verificationCode: {
+      type: String,
+      select: false,
+    },
+    verificationToken: {
+      type: String,
+      select: false,
+    },
+    verificationExpires: {
+      type: Date,
+      select: false,
+    },
+    failedLoginAttempts: {
+      type: Number,
+      default: 0,
+    },
+    lockUntil: {
+      type: Date,
+    },
   },
   { timestamps: true }
 );
