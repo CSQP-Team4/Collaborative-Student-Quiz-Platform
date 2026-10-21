@@ -116,16 +116,61 @@ CSQP is a standalone web application built to bridge peer-to-peer study sharing 
 
 ---
 
-## - Repository Structure
+## 📂 Repository Structure
 
 ```text
 Collaborative-Student-Quiz-Platform/
-├── client/              # React frontend application (SPA)
-├── server/              # Node.js & Express REST API backend
-├── analytics/           # Python analytics & report generation service
-├── docs/                # Architecture diagrams, SRS specifications & API docs
-├── .gitignore           # Global git ignore rules
-└── README.md            # Project overview and documentation
+├── .github/
+│   ├── pull_request_template.md # Standardized PR template with Jira story & checklist
+│   └── workflows/
+│       ├── ci.yml              # Multi-tier CI (Node API, React SPA, Python Analytics)
+│       └── pr-checks.yml       # Enforces Jira issue key format on PR titles & branches
+├── client/                     # Frontend Single-Page Application (React 18 + Vite)
+│   ├── public/                 # Static SVG icons and favicon
+│   ├── src/
+│   │   ├── api/                # Axios HTTP client configuration
+│   │   ├── auth/               # AuthContext, AuthProvider, ProtectedRoute, role helpers
+│   │   ├── components/         # Shared UI components (AuthLayout, FormField)
+│   │   ├── hooks/              # Custom React hooks (useFocusFirstError)
+│   │   ├── pages/              # Login, Register, VerifyEmail, Health, 404
+│   │   │   └── dashboards/     # Role-based dashboard views (Student, Instructor, Admin)
+│   │   ├── test/               # Vitest render helpers and mock auth setup
+│   │   └── utils/              # Client-side form validators & college email checks
+│   ├── package.json
+│   └── vite.config.js
+├── server/                     # Backend REST API Service (Node.js & Express 5)
+│   ├── src/
+│   │   ├── controllers/        # Request handlers (authController: register, verify, login, refresh)
+│   │   ├── middleware/         # RBAC role authorization & IP rate limiter
+│   │   ├── models/             # Mongoose schemas (User, Material, Question, Quiz, Attempt, AuditLog)
+│   │   ├── routes/             # Express routers (/api/health, /api/auth, /api/users)
+│   │   ├── seed/               # Initial seed dataset (questions, demo users)
+│   │   ├── test-utils/         # In-memory test DB fixtures
+│   │   ├── _tests_/            # Jest/Supertest automated test suites
+│   │   ├── app.js              # Express app definition & middleware pipeline
+│   │   ├── db.js               # MongoDB connection logic
+│   │   ├── errorHandler.js     # Centralized error handler
+│   │   ├── middleware.js       # Request ID & structured JSON request logger
+│   │   └── server.js           # Server HTTP entrypoint
+│   └── package.json
+├── analytics/                  # Python Statistical & Analytics Service (FastAPI)
+│   ├── app/
+│   │   ├── config.py           # Configuration & internal RPC token verification
+│   │   ├── main.py             # FastAPI app with /health and mock analytics endpoints
+│   │   └── mock_data.py        # Student performance and class-level summary mock fixtures
+│   ├── tests/                  # Pytest test suite
+│   ├── pytest.ini
+│   └── requirements.txt
+├── docs/                       # Part-1 Specifications, Diagrams, and Export Logs
+│   ├── CSQP_Software_Architecture_and_Design_Specification.pdf
+│   ├── CSQP_Software_Test_Plan.pdf
+│   ├── Team4_SAD.pdf
+│   ├── Team4_TestPlan.pdf
+│   └── component_diagram.png
+├── scripts/
+│   └── jira.py                 # Jira REST API automation script for CLI issue management
+├── .gitignore                  # Global git ignore configuration
+└── README.md                   # Project overview, agile sprint tracking & directory structure
 ```
 
 ---
