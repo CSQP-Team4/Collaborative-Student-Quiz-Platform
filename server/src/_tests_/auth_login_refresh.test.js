@@ -224,6 +224,23 @@ describe('CSQP-8 & CSQP-9: Login & Refresh Token Rotation API (CSQP-F-002 & CSQP
       expect(mockUser.save).toHaveBeenCalled();
     });
 
+    it('Rejects expired or malformed refresh tokens with 401 and clears cookie', async () => {
+      const expiredToken = jwt.sign(
+        { id: 'user_jwt_123', email: 'user@pes.edu' },
+        JWT_REFRESH_SECRET,
+        { expiresIn: '-1s' }
+      );
+
+      const res = await request(app)
+        .post('/api/auth/refresh')
+        .set('Cookie', [`refreshToken=${expiredToken}`]);
+
+      expect(res.status).toBe(401);
+      expect(res.body.error).toBe('INVALID_REFRESH_TOKEN');
+      const cookies = res.headers['set-cookie'];
+      expect(cookies[0]).toMatch(/refreshToken=;/);
+    });
+
     it('Rejects refresh request without cookie with 401', async () => {
       const res = await request(app).post('/api/auth/refresh');
       expect(res.status).toBe(401);
