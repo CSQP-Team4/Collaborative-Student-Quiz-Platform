@@ -1,9 +1,17 @@
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
 const BCRYPT_SALT_ROUNDS = 10;
 const VERIFICATION_CODE_EXPIRY_HOURS = 24;
+
+// JWT configuration
+const JWT_SECRET = process.env.JWT_SECRET || 'csqp_dev_jwt_secret_key_change_in_production_32b';
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'csqp_dev_jwt_refresh_secret_key_change_in_production_32b';
+const ACCESS_TOKEN_EXPIRY = '15m'; // 15-minute access token expiry per SRS/SAD
+const REFRESH_TOKEN_EXPIRY_DAYS = 7;
+const REFRESH_TOKEN_COOKIE_NAME = 'refreshToken';
 
 // Allow config of college email suffix via env (e.g., .edu, .pes.edu), default to .edu
 const COLLEGE_EMAIL_SUFFIX = (process.env.COLLEGE_EMAIL_SUFFIX || '.edu').toLowerCase();
@@ -28,8 +36,63 @@ function generateVerificationArtifacts() {
 }
 
 /**
- * POST /api/auth/register
- * Request body: { name, email, password }
+ * Generates signed JWT Access Token (15-min expiry)
+ */
+function generateAccessToken(user) {
+  return jwt.sign(
+    {
+      id: user._id || user.id,
+      email: user.email,
+      role: user.role,
+      name: user.name,
+    },
+    JWT_SECRET,
+    { expiresIn: ACCESS_TOKEN_EXPIRY }
+  );
+}
+
+/**
+ * Generates signed JWT Refresh Token (7-day expiry) with unique jti to ensure rotation novelty
+ */
+function generateRefreshToken(user) {
+  return jwt.sign(
+    {
+      id: user._id || user.id,
+      email: user.email,
+      jti: crypto.randomBytes(16).toString('hex'),
+    },
+    JWT_REFRESH_SECRET,
+    { expiresIn: `${REFRESH_TOKEN_EXPIRY_DAYS}d` }
+  );
+}
+
+/**
+ * Attaches the refresh token cookie as HttpOnly, Secure (in production), SameSite: Strict
+ */
+function setRefreshTokenCookie(res, token) {
+  res.cookie(REFRESH_TOKEN_COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000,
+    path: '/',
+  });
+}
+
+/**
+ * Clears the refresh token cookie
+ */
+function clearRefreshTokenCookie(res) {
+  res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path: '/',
+  });
+}
+
+/**
+ * POST /api/auth/register (CSQP-7)
  */
 exports.register = async (req, res) => {
   try {
@@ -77,7 +140,6 @@ exports.register = async (req, res) => {
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    // Check if user already exists
     const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       return res.status(409).json({
@@ -89,7 +151,6 @@ exports.register = async (req, res) => {
       });
     }
 
-    // Salt and hash password (CSQP-SR-002)
     const salt = await bcrypt.genSalt(BCRYPT_SALT_ROUNDS);
     const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -106,8 +167,6 @@ exports.register = async (req, res) => {
       verificationExpires: expires,
     });
 
-    // In production/staging, this would be sent via SMTP/SendGrid.
-    // For test and local dev, we log and return instructions.
     return res.status(201).json({
       success: true,
       statusCode: 201,
@@ -119,7 +178,6 @@ exports.register = async (req, res) => {
         role: newUser.role,
         isVerified: newUser.isVerified,
       },
-      // Expose verificationCode and token only in non-production/test environments for automated E2E testing
       ...(process.env.NODE_ENV !== 'production' && {
         _devVerificationCode: code,
         _devVerificationToken: token,
@@ -138,8 +196,7 @@ exports.register = async (req, res) => {
 };
 
 /**
- * POST /api/auth/verify-email
- * Request body: { email, code } OR { token }
+ * POST /api/auth/verify-email (CSQP-7)
  */
 exports.verifyEmail = async (req, res) => {
   try {
@@ -185,7 +242,6 @@ exports.verifyEmail = async (req, res) => {
       });
     }
 
-    // Check expiry
     if (user.verificationExpires && user.verificationExpires < new Date()) {
       return res.status(400).json({
         success: false,
@@ -196,7 +252,6 @@ exports.verifyEmail = async (req, res) => {
       });
     }
 
-    // Verify matching code
     if (code && user.verificationCode !== code.trim()) {
       return res.status(400).json({
         success: false,
@@ -207,7 +262,6 @@ exports.verifyEmail = async (req, res) => {
       });
     }
 
-    // Activate account
     user.isVerified = true;
     user.verificationCode = undefined;
     user.verificationToken = undefined;
@@ -232,8 +286,7 @@ exports.verifyEmail = async (req, res) => {
 };
 
 /**
- * POST /api/auth/resend-verification
- * Request body: { email }
+ * POST /api/auth/resend-verification (CSQP-7)
  */
 exports.resendVerification = async (req, res) => {
   try {
@@ -252,8 +305,6 @@ exports.resendVerification = async (req, res) => {
     const normalizedEmail = email.trim().toLowerCase();
     const user = await User.findOne({ email: normalizedEmail });
 
-    // Per security best practices (CSQP-F-002), return 200 even if user doesn't exist
-    // to prevent email enumeration attacks.
     if (!user) {
       return res.status(200).json({
         success: true,
@@ -295,6 +346,258 @@ exports.resendVerification = async (req, res) => {
       statusCode: 500,
       error: 'SERVER_ERROR',
       message: error.message || 'Failed to resend verification code.',
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+/**
+ * POST /api/auth/login (CSQP-8 & CSQP-9)
+ * Request body: { email, password }
+ * Response: 200 OK { success, accessToken, user } + sets HttpOnly refreshToken cookie
+ */
+exports.login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        statusCode: 400,
+        error: 'VALIDATION_ERROR',
+        message: 'Email and password are required.',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Query user including password and refreshTokens
+    const user = await User.findOne({ email: normalizedEmail })
+      .select('+password +refreshTokens +lockUntil +failedLoginAttempts');
+
+    // Generic error message to prevent enumeration (CSQP-F-002)
+    const genericAuthError = () =>
+      res.status(401).json({
+        success: false,
+        statusCode: 401,
+        error: 'INVALID_CREDENTIALS',
+        message: 'Incorrect email or password.',
+        timestamp: new Date().toISOString(),
+      });
+
+    if (!user) {
+      return genericAuthError();
+    }
+
+    // Check account lockout (CSQP-11 / CSQP-SR-005)
+    if (user.lockUntil && user.lockUntil > new Date()) {
+      return res.status(429).json({
+        success: false,
+        statusCode: 429,
+        error: 'ACCOUNT_LOCKED',
+        message: 'Too many failed attempts. Your account is locked for 15 minutes.',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // Verify password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      // Increment failed login counter
+      user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
+      if (user.failedLoginAttempts >= 5) {
+        user.lockUntil = new Date(Date.now() + 15 * 60 * 1000); // 15 min lock
+      }
+      await user.save();
+      return genericAuthError();
+    }
+
+    // Check if account is verified (SRS AC-CSQP-F-001: Unverified accounts cannot log in)
+    if (!user.isVerified) {
+      return res.status(403).json({
+        success: false,
+        statusCode: 403,
+        error: 'EMAIL_NOT_VERIFIED',
+        message: 'Please verify your college email address before logging in.',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // Reset failed login counter on success
+    user.failedLoginAttempts = 0;
+    user.lockUntil = undefined;
+
+    // Generate tokens (CSQP-8: 15m access token, CSQP-9: 7d rotating refresh token)
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user);
+
+    // Save refresh token to user's active session list
+    user.refreshTokens = user.refreshTokens || [];
+    user.refreshTokens.push(refreshToken);
+    // Keep max 5 active devices/refresh tokens
+    if (user.refreshTokens.length > 5) {
+      user.refreshTokens.shift();
+    }
+    await user.save();
+
+    // Set HttpOnly cookie for refresh token (CSQP-SR-003)
+    setRefreshTokenCookie(res, refreshToken);
+
+    return res.status(200).json({
+      success: true,
+      statusCode: 200,
+      message: 'Login successful.',
+      accessToken,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      statusCode: 500,
+      error: 'SERVER_ERROR',
+      message: error.message || 'Login failed due to an unexpected error.',
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+/**
+ * POST /api/auth/refresh (CSQP-9 / CSQP-SR-003)
+ * Rotates the refresh token: verifies current token, issues new token pair, and revokes old token.
+ * Prevents reuse attacks: if a revoked token is used, all tokens for the user are invalidated.
+ */
+exports.refresh = async (req, res) => {
+  try {
+    const incomingRefreshToken = req.cookies?.[REFRESH_TOKEN_COOKIE_NAME];
+
+    if (!incomingRefreshToken) {
+      return res.status(401).json({
+        success: false,
+        statusCode: 401,
+        error: 'UNAUTHORIZED',
+        message: 'Refresh token cookie missing.',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // Verify refresh token signature
+    let decoded;
+    try {
+      decoded = jwt.verify(incomingRefreshToken, JWT_REFRESH_SECRET);
+    } catch (err) {
+      clearRefreshTokenCookie(res);
+      return res.status(401).json({
+        success: false,
+        statusCode: 401,
+        error: 'INVALID_REFRESH_TOKEN',
+        message: 'Refresh token is expired or invalid. Please log in again.',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // Find user with refreshTokens selected
+    const user = await User.findById(decoded.id).select('+refreshTokens');
+    if (!user) {
+      clearRefreshTokenCookie(res);
+      return res.status(401).json({
+        success: false,
+        statusCode: 401,
+        error: 'USER_NOT_FOUND',
+        message: 'User no longer exists.',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // REUSE DETECTION (CSQP-SR-003):
+    // If incoming token is not found in active refreshTokens, token was compromised/replayed!
+    if (!user.refreshTokens.includes(incomingRefreshToken)) {
+      // Invalidate all tokens for this user for security
+      user.refreshTokens = [];
+      await user.save();
+      clearRefreshTokenCookie(res);
+      return res.status(403).json({
+        success: false,
+        statusCode: 403,
+        error: 'TOKEN_REUSE_DETECTED',
+        message: 'Invalid session token reuse detected. All sessions terminated. Please log in again.',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // Remove the used refresh token (rotation)
+    user.refreshTokens = user.refreshTokens.filter((token) => token !== incomingRefreshToken);
+
+    // Generate new token pair
+    const newAccessToken = generateAccessToken(user);
+    const newRefreshToken = generateRefreshToken(user);
+
+    user.refreshTokens.push(newRefreshToken);
+    await user.save();
+
+    // Set new rotating cookie
+    setRefreshTokenCookie(res, newRefreshToken);
+
+    return res.status(200).json({
+      success: true,
+      statusCode: 200,
+      message: 'Tokens renewed successfully.',
+      accessToken: newAccessToken,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      statusCode: 500,
+      error: 'SERVER_ERROR',
+      message: error.message || 'Token refresh failed.',
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+/**
+ * POST /api/auth/logout (CSQP-9)
+ * Clears the refresh token cookie and revokes it from DB
+ */
+exports.logout = async (req, res) => {
+  try {
+    const incomingRefreshToken = req.cookies?.[REFRESH_TOKEN_COOKIE_NAME];
+
+    if (incomingRefreshToken) {
+      try {
+        const decoded = jwt.decode(incomingRefreshToken);
+        if (decoded && decoded.id) {
+          await User.findByIdAndUpdate(decoded.id, {
+            $pull: { refreshTokens: incomingRefreshToken },
+          });
+        }
+      } catch (e) {
+        // Ignore decode errors on logout
+      }
+    }
+
+    clearRefreshTokenCookie(res);
+
+    return res.status(204).send();
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      statusCode: 500,
+      error: 'SERVER_ERROR',
+      message: error.message || 'Logout failed.',
       timestamp: new Date().toISOString(),
     });
   }

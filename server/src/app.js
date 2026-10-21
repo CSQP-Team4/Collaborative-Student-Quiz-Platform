@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const healthRouter = require('./routes/health');
 const authRouter = require('./routes/auth');
 const {
@@ -13,7 +14,11 @@ const app = express();
 app.use(requestIdMiddleware);
 app.use(requestLoggingMiddleware);
 
-app.use(cors());
+app.use(cors({
+  origin: true,
+  credentials: true,
+}));
+app.use(cookieParser());
 app.use(express.json());
 
 // Register API routes
