@@ -36,6 +36,9 @@ async function seedUsers(password) {
     SEED_USERS.map(async ({ key, ...user }) => ({
       ...user,
       password: await bcrypt.hash(password, BCRYPT_ROUNDS),
+      // Seed accounts skip email verification so they can log in straight
+      // away; real registrations still start unverified (CSQP-F-001).
+      isVerified: true,
     })),
   );
   const created = await User.insertMany(docs);
