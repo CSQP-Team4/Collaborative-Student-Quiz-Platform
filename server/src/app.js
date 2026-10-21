@@ -11,9 +11,35 @@ const {
 const errorHandler = require('./errorHandler');
 
 const app = express();
+const isProduction = process.env.NODE_ENV === 'production';
 
 app.use(requestIdMiddleware);
 app.use(requestLoggingMiddleware);
+
+app.use((req, res, next) => {
+  if (!isProduction) return next();
+
+  if (process.env.HTTPS_MODE === 'direct') {
+    // Direct HTTPS is enforced by the HTTPS server in server.js.
+    if (req.socket.encrypted) return next();
+  } else if (
+    process.env.HTTPS_MODE === 'proxy' &&
+    req.secure
+  ) {
+    // Only use proxy mode behind a trusted HTTPS-terminating proxy.
+    return next();
+  }
+
+  return res.status(400).json({
+    success: false,
+    statusCode: 400,
+    error: 'HTTPS_REQUIRED',
+    message: 'HTTPS is required.',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+
 
 app.use(cors({
   origin: true,
