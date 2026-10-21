@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const AuditLog = require('../models/AuditLog');
 
 const BCRYPT_SALT_ROUNDS = 10;
 const VERIFICATION_CODE_EXPIRY_HOURS = 24;
@@ -406,10 +407,33 @@ exports.login = async (req, res) => {
     if (!isMatch) {
       // Increment failed login counter
       user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
-      if (user.failedLoginAttempts >= 5) {
+      const willLock = user.failedLoginAttempts >= 5;
+
+      if (willLock) {
         user.lockUntil = new Date(Date.now() + 15 * 60 * 1000); // 15 min lock
       }
       await user.save();
+
+      // Audit Log on lockout (CSQP-11 / AC-SR-005)
+      if (willLock) {
+        try {
+          await AuditLog.create({
+            user: user._id,
+            action: 'ACCOUNT_LOCKOUT',
+            resource: 'User',
+            resourceId: user._id,
+            ipAddress: req.ip || req.connection?.remoteAddress || req.headers['x-forwarded-for'] || 'unknown',
+            details: {
+              email: user.email,
+              failedAttempts: user.failedLoginAttempts,
+              lockDurationMinutes: 15,
+            },
+          });
+        } catch (auditErr) {
+          console.error('AuditLog creation error on lockout:', auditErr.message);
+        }
+      }
+
       return genericAuthError();
     }
 

@@ -3,6 +3,7 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const healthRouter = require('./routes/health');
 const authRouter = require('./routes/auth');
+const usersRouter = require('./routes/users');
 const {
   requestIdMiddleware,
   requestLoggingMiddleware,
@@ -24,6 +25,7 @@ app.use(express.json());
 // Register API routes
 app.use('/api', healthRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/users', usersRouter);
 
 // Handle unknown endpoints
 app.use((req, res, next) => {
