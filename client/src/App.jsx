@@ -1,56 +1,65 @@
-import { useEffect, useState } from 'react';
-import { Link, Route, Routes } from 'react-router-dom';
-import api from './api/api';
+import { Navigate, Route, Routes } from 'react-router-dom';
+import { useAuth } from './auth/AuthContext';
+import ProtectedRoute from './auth/ProtectedRoute';
+import { ROLES, homeFor } from './auth/roles';
+import HealthPage from './pages/HealthPage';
+import LoginPage from './pages/LoginPage';
+import NotFoundPage from './pages/NotFoundPage';
+import RegisterPage from './pages/RegisterPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
+import AdminDashboard from './pages/dashboards/AdminDashboard';
+import InstructorDashboard from './pages/dashboards/InstructorDashboard';
+import StudentDashboard from './pages/dashboards/StudentDashboard';
 import './App.css';
 
-function Home() {
-  return (
-    <main>
-      <h1>Collaborative Student Quiz Platform</h1>
-      <p>Welcome to CSQP.</p>
-      <p>Project scaffolding is in progress.</p>
-      <Link to="/health">View API health</Link>
-    </main>
-  );
-}
-
-function Health() {
-  const [health, setHealth] = useState(null);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    api.get('/health')
-      .then((response) => setHealth(response.data))
-      .catch(() => setError('Unable to connect to the API.'));
-  }, []);
-
-  return (
-    <main>
-      <h1>API Health Check</h1>
-
-      {error && <p>{error}</p>}
-
-      {!health && !error && <p>Checking API status...</p>}
-
-      {health && (
-        <>
-          <p>API Status: {health.status}</p>
-          <p>MongoDB: {health.mongodb}</p>
-          <h2>Memory Usage</h2>
-          <pre>{JSON.stringify(health.memoryUsage, null, 2)}</pre>
-        </>
-      )}
-
-      <Link to="/">Back to Home</Link>
-    </main>
-  );
+// "/" sends logged-in users to their role's dashboard, everyone else to login.
+function HomeRedirect() {
+  const { user, status } = useAuth();
+  if (status === 'loading') {
+    return (
+      <p className="page-status" role="status">
+        Loading…
+      </p>
+    );
+  }
+  return <Navigate to={homeFor(user)} replace />;
 }
 
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/health" element={<Health />} />
+      <Route path="/" element={<HomeRedirect />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
+      <Route path="/health" element={<HealthPage />} />
+
+      <Route
+        path="/student"
+        element={
+          <ProtectedRoute allowedRoles={[ROLES.STUDENT]}>
+            <StudentDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/instructor"
+        element={
+          <ProtectedRoute allowedRoles={[ROLES.INSTRUCTOR]}>
+            <InstructorDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
+            <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }
