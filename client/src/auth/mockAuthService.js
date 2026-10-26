@@ -60,7 +60,10 @@ const mockAuthService = {
       verified: false,
     });
     save(state);
-    return { message: `Verification code sent (mock code: ${MOCK_VERIFICATION_CODE}).` };
+    return {
+      message: 'Verification code sent.',
+      _devVerificationCode: MOCK_VERIFICATION_CODE, // same field as the real API
+    };
   },
 
   async verifyEmail({ email, code, token }) {
@@ -78,7 +81,7 @@ const mockAuthService = {
 
   async resendVerification() {
     await delay();
-    return { message: `A new code was sent (mock code: ${MOCK_VERIFICATION_CODE}).` };
+    return { message: 'A new code was sent.', _devVerificationCode: MOCK_VERIFICATION_CODE };
   },
 
   async login({ email, password }) {

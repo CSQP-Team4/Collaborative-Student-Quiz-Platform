@@ -6,6 +6,7 @@ import { homeFor } from '../auth/roles';
 import AuthLayout from '../components/AuthLayout';
 import FormField from '../components/FormField';
 import useFocusFirstError from '../hooks/useFocusFirstError';
+import { getDevVerificationCode } from '../utils/devVerificationCode';
 import { COLLEGE_EMAIL_SUFFIX, validateRegisterForm } from '../utils/validation';
 
 const FIELDS = ['name', 'email', 'password', 'confirmPassword'];
@@ -63,7 +64,11 @@ export default function RegisterPage() {
         password: values.password,
       });
       navigate(`/verify-email?email=${encodeURIComponent(email)}`, {
-        state: { notice: result?.message || 'We sent a verification code to your email.' },
+        state: {
+          notice: result?.message || 'We sent a verification code to your email.',
+          // Development only: lets the verify page show the code (no email service yet).
+          devCode: getDevVerificationCode(result),
+        },
       });
     } catch (error) {
       setFormError(getAuthErrorMessage(error, 'register'));

@@ -139,6 +139,19 @@
   color: var(--success);
 }
 
+/* Development-only verification code banner (never shown in production builds) */
+.notice-dev {
+  background: var(--accent-soft);
+  color: var(--text-h);
+  border-left: 4px solid var(--accent);
+}
+
+.notice-dev code {
+  font-size: 1.05em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
 .mock-banner {
   max-width: 420px;
   font-size: 0.875rem;

@@ -5,6 +5,7 @@ import { getAuthErrorMessage } from '../auth/authService';
 import AuthLayout from '../components/AuthLayout';
 import FormField from '../components/FormField';
 import useFocusFirstError from '../hooks/useFocusFirstError';
+import { getDevVerificationCode } from '../utils/devVerificationCode';
 import { validateEmailFormat, validateVerifyForm } from '../utils/validation';
 
 const FIELDS = ['email', 'code'];
@@ -19,7 +20,9 @@ export default function VerifyEmailPage() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
 
-  const [values, setValues] = useState({ email: searchParams.get('email') || '', code: '' });
+  // Development only: code handed over by the register page, shown and pre-filled.
+  const [devCode, setDevCode] = useState(() => getDevVerificationCode(location.state));
+  const [values, setValues] = useState({ email: searchParams.get('email') || '', code: devCode });
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState('');
   const [notice, setNotice] = useState(location.state?.notice || '');
@@ -88,6 +91,12 @@ export default function VerifyEmailPage() {
     try {
       const result = await resendVerification({ email: values.email.trim() });
       setNotice(result?.message || 'A new code has been sent.');
+      const newDevCode = getDevVerificationCode(result);
+      if (newDevCode) {
+        setDevCode(newDevCode);
+        setValues((prev) => ({ ...prev, code: newDevCode }));
+        setErrors((prev) => ({ ...prev, code: '' }));
+      }
     } catch (error) {
       setFormError(getAuthErrorMessage(error, 'verify'));
     }
@@ -114,6 +123,12 @@ export default function VerifyEmailPage() {
       {formError && (
         <p className="notice notice-error" role="alert">
           {formError}
+        </p>
+      )}
+      {devCode && (
+        <p className="notice notice-dev" data-testid="dev-code-banner">
+          <strong>Local development:</strong> no email service is connected, so your
+          verification code is <code>{devCode}</code>. It has been filled in for you.
         </p>
       )}
 
