@@ -145,6 +145,7 @@ Collaborative-Student-Quiz-Platform/
 │   │   ├── models/             # Mongoose schemas (User, Material, Question, Quiz, Attempt, AuditLog)
 │   │   ├── routes/             # Express routers (/api/health, /api/auth, /api/users)
 │   │   ├── seed/               # Initial seed dataset (questions, demo users)
+│   │   ├── utils/              # Transactional mailer service (Gmail SMTP OTP & links)
 │   │   ├── test-utils/         # In-memory test DB fixtures
 │   │   ├── _tests_/            # Jest/Supertest automated test suites
 │   │   ├── app.js              # Express app definition & middleware pipeline
@@ -161,14 +162,12 @@ Collaborative-Student-Quiz-Platform/
 │   ├── tests/                  # Pytest test suite
 │   ├── pytest.ini
 │   └── requirements.txt
-├── docs/                       # Part-1 Specifications, Diagrams, and Export Logs
-│   ├── CSQP_Software_Architecture_and_Design_Specification.pdf
-│   ├── CSQP_Software_Test_Plan.pdf
-│   ├── Team4_SAD.pdf
-│   ├── Team4_TestPlan.pdf
-│   └── component_diagram.png
-├── scripts/
-│   └── jira.py                 # Jira REST API automation script for CLI issue management
+├── docs/                       # Part-1 Specifications and Architecture Diagrams
+│   ├── Team4_SAD.pdf           # Software Architecture & Design Document
+│   ├── Team4_TestPlan.pdf      # Software Test Plan (STP)
+│   ├── component_diagram.png   # System component architecture diagram
+│   ├── sequence_diagram_approval.png
+│   └── sequence_diagram_quiz.png
 ├── .gitignore                  # Global git ignore configuration
 └── README.md                   # Project overview, agile sprint tracking & directory structure
 ```

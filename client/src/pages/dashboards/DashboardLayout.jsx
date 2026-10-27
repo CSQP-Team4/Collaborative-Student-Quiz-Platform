@@ -34,7 +34,6 @@ export default function DashboardLayout({ title, intro, tiles }) {
             <li key={tile.title} className="tile">
               <h2>{tile.title}</h2>
               <p>{tile.description}</p>
-              <p className="tile-meta">{tile.story}</p>
             </li>
           ))}
         </ul>

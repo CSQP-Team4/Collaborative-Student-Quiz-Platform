@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const AuditLog = require('../models/AuditLog');
+const { sendVerificationEmail } = require('../utils/mailer');
 
 const BCRYPT_SALT_ROUNDS = 10;
 const VERIFICATION_CODE_EXPIRY_HOURS = 24;
@@ -168,6 +169,14 @@ exports.register = async (req, res) => {
       verificationExpires: expires,
     });
 
+    // Dispatch verification email with code and link via Gmail SMTP
+    await sendVerificationEmail({
+      to: newUser.email,
+      name: newUser.name,
+      code,
+      token,
+    });
+
     return res.status(201).json({
       success: true,
       statusCode: 201,
@@ -330,6 +339,14 @@ exports.resendVerification = async (req, res) => {
     user.verificationToken = token;
     user.verificationExpires = expires;
     await user.save();
+
+    // Dispatch fresh verification email with code and link via Gmail SMTP
+    await sendVerificationEmail({
+      to: user.email,
+      name: user.name,
+      code,
+      token,
+    });
 
     return res.status(200).json({
       success: true,
