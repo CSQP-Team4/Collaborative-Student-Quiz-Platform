@@ -359,7 +359,7 @@ exports.submitQuizAttempt = async (req, res) => {
 
     for (const resp of responses) {
       const qIdStr = (resp.question?._id || resp.question || '').toString();
-      const submittedAnswer = (resp.answer || '').toString().trim();
+      const submittedAnswer = (resp.answer || resp.selectedOption || '').toString().trim();
       const correctAnswer = (answerMap.get(qIdStr) || '').toString().trim();
 
       if (submittedAnswer && correctAnswer && submittedAnswer.toLowerCase() === correctAnswer.toLowerCase()) {
@@ -378,15 +378,23 @@ exports.submitQuizAttempt = async (req, res) => {
     attempt.submittedAt = new Date();
     await attempt.save();
 
+    const totalQuestions = attempt.shuffledQuestions.length;
+    const percentage = totalQuestions > 0 ? Math.round((calculatedScore / totalQuestions) * 100) : 0;
+
     return res.status(200).json({
       success: true,
       statusCode: 200,
       message: 'Quiz submitted successfully!',
+      score: attempt.score,
+      totalQuestions,
+      percentage,
+      isFlaggedForReview: attempt.isFlaggedForReview,
       result: {
         attemptId: attempt._id,
         status: attempt.status,
         score: attempt.score,
-        totalQuestions: attempt.shuffledQuestions.length,
+        totalQuestions,
+        percentage,
         submittedAt: attempt.submittedAt,
         flaggedForReview: attempt.isFlaggedForReview,
       },

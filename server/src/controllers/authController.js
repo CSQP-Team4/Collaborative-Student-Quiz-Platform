@@ -465,22 +465,42 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Reset failed login counter on success
-    user.failedLoginAttempts = 0;
-    user.lockUntil = undefined;
-
     // Generate tokens (CSQP-8: 15m access token, CSQP-9: 7d rotating refresh token)
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
 
     // Save refresh token to user's active session list
-    user.refreshTokens = user.refreshTokens || [];
-    user.refreshTokens.push(refreshToken);
-    // Keep max 5 active devices/refresh tokens
-    if (user.refreshTokens.length > 5) {
-      user.refreshTokens.shift();
+    // Fall back to atomic $push on concurrent VersionError
+    try {
+      user.refreshTokens = user.refreshTokens || [];
+      user.refreshTokens.push(refreshToken);
+      if (user.refreshTokens.length > 5) {
+        user.refreshTokens.shift();
+      }
+      user.failedLoginAttempts = 0;
+      user.lockUntil = undefined;
+      if (typeof user.save === 'function') {
+        await user.save();
+      }
+    } catch (saveErr) {
+      if (saveErr.name === 'VersionError') {
+        await User.updateOne(
+          { _id: user._id },
+          {
+            $set: { failedLoginAttempts: 0 },
+            $unset: { lockUntil: 1 },
+            $push: {
+              refreshTokens: {
+                $each: [refreshToken],
+                $slice: -5,
+              },
+            },
+          }
+        );
+      } else {
+        throw saveErr;
+      }
     }
-    await user.save();
 
     // Set HttpOnly cookie for refresh token (CSQP-SR-003)
     setRefreshTokenCookie(res, refreshToken);
