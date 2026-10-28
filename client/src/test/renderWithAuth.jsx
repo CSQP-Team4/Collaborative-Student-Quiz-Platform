@@ -12,6 +12,8 @@ export function makeService(overrides = {}) {
     register: vi.fn().mockResolvedValue({ message: 'Code sent.' }),
     verifyEmail: vi.fn().mockResolvedValue({ message: 'Verified.' }),
     resendVerification: vi.fn().mockResolvedValue({ message: 'New code sent.' }),
+    forgotPassword: vi.fn().mockResolvedValue({ message: 'If an account exists with this college email, a reset link has been sent.' }),
+    resetPassword: vi.fn().mockResolvedValue({ message: 'Password reset successful!' }),
     login: vi.fn(),
     refresh: vi.fn().mockRejectedValue(notLoggedIn),
     logout: vi.fn().mockResolvedValue(),

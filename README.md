@@ -132,7 +132,7 @@ Collaborative-Student-Quiz-Platform/
 │   │   ├── auth/               # AuthContext, AuthProvider, ProtectedRoute, role helpers
 │   │   ├── components/         # Shared UI components (AuthLayout, FormField)
 │   │   ├── hooks/              # Custom React hooks (useFocusFirstError)
-│   │   ├── pages/              # Login, Register, VerifyEmail, Health, 404
+│   │   ├── pages/              # Login, Register, VerifyEmail, ForgotPassword, ResetPassword, Health, 404
 │   │   │   └── dashboards/     # Role-based dashboard views (Student, Instructor, Admin)
 │   │   ├── test/               # Vitest render helpers and mock auth setup
 │   │   └── utils/              # Client-side form validators & college email checks
@@ -140,7 +140,7 @@ Collaborative-Student-Quiz-Platform/
 │   └── vite.config.js
 ├── server/                     # Backend REST API Service (Node.js & Express 5)
 │   ├── src/
-│   │   ├── controllers/        # Request handlers (authController: register, verify, login, refresh)
+│   │   ├── controllers/        # Request handlers (authController: register, verify, login, refresh, password reset)
 │   │   ├── middleware/         # RBAC role authorization & IP rate limiter
 │   │   ├── models/             # Mongoose schemas (User, Material, Question, Quiz, Attempt, AuditLog)
 │   │   ├── routes/             # Express routers (/api/health, /api/auth, /api/users)

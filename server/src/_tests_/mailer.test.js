@@ -1,4 +1,9 @@
-const { buildVerificationHtml, sendVerificationEmail } = require('../utils/mailer');
+const {
+  buildVerificationHtml,
+  sendVerificationEmail,
+  buildPasswordResetHtml,
+  sendPasswordResetEmail,
+} = require('../utils/mailer');
 
 describe('Mailer Service (Gmail SMTP)', () => {
   const originalEnv = process.env.NODE_ENV;
@@ -32,6 +37,19 @@ describe('Mailer Service (Gmail SMTP)', () => {
     });
   });
 
+  describe('buildPasswordResetHtml', () => {
+    it('renders the reset link and instructions in HTML template', () => {
+      const html = buildPasswordResetHtml({
+        name: 'John Doe',
+        resetLink: 'http://localhost:5173/reset-password?token=reset123&email=john%40pes.edu',
+      });
+
+      expect(html).toContain('John Doe');
+      expect(html).toContain('http://localhost:5173/reset-password?token=reset123&email=john%40pes.edu');
+      expect(html).toContain('30 minutes');
+    });
+  });
+
   describe('sendVerificationEmail', () => {
     it('returns mocked success in test environment without network calls', async () => {
       process.env.NODE_ENV = 'test';
@@ -46,6 +64,22 @@ describe('Mailer Service (Gmail SMTP)', () => {
       expect(result.mocked).toBe(true);
       expect(result.code).toBe('112233');
       expect(result.verificationLink).toContain('token=token999');
+    });
+  });
+
+  describe('sendPasswordResetEmail', () => {
+    it('returns mocked success in test environment without network calls', async () => {
+      process.env.NODE_ENV = 'test';
+      const result = await sendPasswordResetEmail({
+        to: 'student@pes.edu',
+        name: 'Test Student',
+        token: 'secret_token_123',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.mocked).toBe(true);
+      expect(result.token).toBe('secret_token_123');
+      expect(result.resetLink).toContain('token=secret_token_123');
     });
   });
 });

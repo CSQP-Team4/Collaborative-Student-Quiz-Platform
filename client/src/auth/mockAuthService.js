@@ -108,6 +108,27 @@ const mockAuthService = {
     state.sessionUserId = null;
     save(state);
   },
+
+  async forgotPassword({ email }) {
+    await delay();
+    return {
+      message: 'If an account exists with this email, a password reset link has been sent.',
+      _devResetToken: 'mock_dev_reset_token',
+    };
+  },
+
+  async resetPassword({ token, email, password }) {
+    await delay();
+    const state = load();
+    const user = email ? state.users.find((u) => u.email === email.trim().toLowerCase()) : state.users[0];
+    if (user) {
+      user.password = password;
+      save(state);
+    }
+    return {
+      message: 'Password reset successful! You can now log in with your new password.',
+    };
+  },
 };
 
 export default mockAuthService;

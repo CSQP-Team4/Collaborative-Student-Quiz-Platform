@@ -153,8 +153,117 @@ async function sendVerificationEmail({ to, name, code, token }) {
   }
 }
 
+/**
+ * Builds standard HTML email content for password reset.
+ */
+function buildPasswordResetHtml({ name, resetLink }) {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Reset your CSQP Password</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f9fafb; margin: 0; padding: 24px; color: #111827;">
+  <div style="max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 8px; border: 1px solid #e5e7eb; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <div style="background-color: #4f46e5; padding: 24px 32px; color: #ffffff;">
+      <h1 style="margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.01em;">Collaborative Student Quiz Platform</h1>
+    </div>
+    <div style="padding: 32px;">
+      <h2 style="margin-top: 0; font-size: 18px; color: #1f2937;">Hello ${name || 'there'},</h2>
+      <p style="font-size: 15px; line-height: 1.6; color: #4b5563;">
+        We received a request to reset the password for your CSQP account. Click the button below to choose a new password:
+      </p>
+
+      <div style="text-align: center; margin: 32px 0;">
+        <a href="${resetLink}" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 6px; font-weight: 600; font-size: 15px;">Reset Password</a>
+      </div>
+
+      <p style="font-size: 14px; line-height: 1.6; color: #6b7280;">
+        If the button does not work, copy and paste this link into your browser:<br>
+        <a href="${resetLink}" style="color: #4f46e5; word-break: break-all;">${resetLink}</a>
+      </p>
+
+      <p style="font-size: 13px; line-height: 1.5; color: #9ca3af; border-top: 1px solid #e5e7eb; padding-top: 20px; margin-bottom: 0;">
+        This single-use link is valid for 30 minutes. If you did not request a password reset, you can safely ignore this email; your account remains secure.
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+  `.trim();
+}
+
+/**
+ * Sends a password reset email with 30-minute token via Gmail SMTP.
+ *
+ * @param {Object} options
+ * @param {string} options.to - Recipient email
+ * @param {string} options.name - Recipient name
+ * @param {string} options.token - 30-minute password reset token
+ * @returns {Promise<{success: boolean, messageId?: string, resetLink?: string, error?: any}>}
+ */
+async function sendPasswordResetEmail({ to, name, token }) {
+  const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+  const resetLink = `${clientUrl}/reset-password?token=${token}&email=${encodeURIComponent(to)}`;
+
+  // Skip actual network call in automated Jest tests to maintain test isolation and speed
+  if (process.env.NODE_ENV === 'test') {
+    return { success: true, mocked: true, token, resetLink };
+  }
+
+  const mailTransporter = getTransporter();
+
+  if (!mailTransporter) {
+    logDevEmailBox({
+      to,
+      name,
+      code: 'RESET_TOKEN',
+      verificationLink: resetLink,
+      note: 'EMAIL_USER / EMAIL_PASS not set (Local Console Fallback)',
+    });
+    return { success: true, dispatched: false, reason: 'NO_CREDENTIALS', resetLink };
+  }
+
+  const senderName = process.env.EMAIL_FROM || 'Collaborative Quiz Platform';
+  const senderAddress = process.env.EMAIL_USER;
+
+  try {
+    const info = await mailTransporter.sendMail({
+      from: `"${senderName}" <${senderAddress}>`,
+      to,
+      subject: 'Reset your CSQP Account Password',
+      html: buildPasswordResetHtml({ name, resetLink }),
+      text: `Hello ${name || 'there'},\n\nWe received a request to reset your CSQP password. Click the link below to choose a new password:\n\n${resetLink}\n\nThis link expires in 30 minutes. If you did not request this, you can ignore this email.`,
+    });
+
+    console.log(`[Gmail SMTP Success] Password reset email sent to ${to} (Message ID: ${info.messageId})`);
+    logDevEmailBox({
+      to,
+      name,
+      code: '30-MIN RESET',
+      verificationLink: resetLink,
+      note: `Sent via Gmail SMTP (ID: ${info.messageId})`,
+    });
+
+    return { success: true, messageId: info.messageId, resetLink };
+  } catch (err) {
+    console.error(`[Gmail SMTP Error] Failed to deliver password reset to ${to}:`, err.message);
+    logDevEmailBox({
+      to,
+      name,
+      code: 'RESET_TOKEN',
+      verificationLink: resetLink,
+      note: 'Gmail SMTP Error Fallback',
+    });
+    return { success: false, error: err.message, resetLink };
+  }
+}
+
 module.exports = {
   sendVerificationEmail,
   buildVerificationHtml,
+  sendPasswordResetEmail,
+  buildPasswordResetHtml,
   getTransporter,
 };

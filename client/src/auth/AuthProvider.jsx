@@ -57,6 +57,8 @@ export default function AuthProvider({ children, service = defaultService }) {
       register: service.register,
       verifyEmail: service.verifyEmail,
       resendVerification: service.resendVerification,
+      forgotPassword: service.forgotPassword,
+      resetPassword: service.resetPassword,
     }),
     [user, status, login, logout, service],
   );

@@ -84,3 +84,23 @@ export function validateVerifyForm({ email, code }) {
     ['code', validateOtp(code)],
   ]);
 }
+
+export function validateForgotPasswordForm({ email }) {
+  return collect([
+    ['email', validateCollegeEmail(email)],
+  ]);
+}
+
+export function validateResetPasswordForm({ password, confirmPassword }) {
+  const passwordError = validatePassword(password);
+  let confirmError = '';
+  if (!confirmPassword) {
+    confirmError = 'Confirm your new password.';
+  } else if (password !== confirmPassword) {
+    confirmError = 'Passwords do not match.';
+  }
+  return collect([
+    ['password', passwordError],
+    ['confirmPassword', confirmError],
+  ]);
+}
