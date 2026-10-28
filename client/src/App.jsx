@@ -9,6 +9,7 @@ import RegisterPage from './pages/RegisterPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import QuizAttemptPage from './pages/QuizAttemptPage';
 import AdminDashboard from './pages/dashboards/AdminDashboard';
 import InstructorDashboard from './pages/dashboards/InstructorDashboard';
 import StudentDashboard from './pages/dashboards/StudentDashboard';
@@ -43,6 +44,14 @@ export default function App() {
         element={
           <ProtectedRoute allowedRoles={[ROLES.STUDENT]}>
             <StudentDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/quiz/:quizId"
+        element={
+          <ProtectedRoute allowedRoles={[ROLES.STUDENT, ROLES.INSTRUCTOR, ROLES.ADMIN]}>
+            <QuizAttemptPage />
           </ProtectedRoute>
         }
       />

@@ -43,6 +43,46 @@ const quizAttemptSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    // CSQP-F-032: Per-attempt randomized snapshot of questions & shuffled options
+    shuffledQuestions: [
+      {
+        question: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Question',
+          required: true,
+        },
+        text: String,
+        type: {
+          type: String,
+          enum: ['MCQ', 'TRUE_FALSE', 'SUBJECTIVE'],
+        },
+        options: [String],
+        subject: String,
+        topic: String,
+      },
+    ],
+    // CSQP-F-032: Anti-cheat security telemetry events (tab switch, clipboard attempt, blur)
+    antiCheatEvents: [
+      {
+        eventType: {
+          type: String,
+          enum: ['TAB_SWITCH', 'CLIPBOARD_ATTEMPT', 'WINDOW_BLUR', 'RIGHT_CLICK_ATTEMPT'],
+          required: true,
+        },
+        timestamp: {
+          type: Date,
+          default: Date.now,
+        },
+        details: {
+          type: mongoose.Schema.Types.Mixed,
+          default: {},
+        },
+      },
+    ],
+    isFlaggedForReview: {
+      type: Boolean,
+      default: false,
+    },
     startedAt: {
       type: Date,
       default: Date.now,
