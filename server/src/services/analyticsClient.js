@@ -20,7 +20,7 @@ function baseUrl() {
   return (process.env.ANALYTICS_URL || DEFAULT_URL).replace(/\/+$/, '');
 }
 
-async function post(path, body) {
+async function request(path, body) {
   let res;
   try {
     res = await fetch(`${baseUrl()}${path}`, {
@@ -41,11 +41,27 @@ async function post(path, body) {
   if (!res.ok) {
     throw new AnalyticsUnavailableError(`The analytics service returned HTTP ${res.status}.`);
   }
-  return res.json();
+  return res;
+}
+
+async function post(path, body) {
+  return (await request(path, body)).json();
+}
+
+// Report downloads (CSQP-30): returns the file bytes plus its headers.
+async function postFile(path, body) {
+  const res = await request(path, body);
+  return {
+    content: Buffer.from(await res.arrayBuffer()),
+    contentType: res.headers.get('content-type') || 'application/octet-stream',
+    disposition: res.headers.get('content-disposition') || 'attachment',
+  };
 }
 
 module.exports = {
   AnalyticsUnavailableError,
   getStudentSummary: (payload) => post('/api/students/summary', payload),
   getClassSummary: (payload) => post('/api/quizzes/class-summary', payload),
+  getStudentReport: (payload, format) => postFile(`/api/reports/student?format=${format}`, payload),
+  getClassReport: (payload, format) => postFile(`/api/reports/class?format=${format}`, payload),
 };

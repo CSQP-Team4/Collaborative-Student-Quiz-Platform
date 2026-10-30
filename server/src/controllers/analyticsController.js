@@ -50,6 +50,40 @@ async function buildAttemptPayload(attempts) {
   });
 }
 
+async function studentPayload(user) {
+  const attempts = await QuizAttempt.find({ student: user.id, status: 'submitted' })
+    .populate('quiz', 'title subject')
+    .sort({ submittedAt: 1 });
+  return { studentId: user.id, attempts: await buildAttemptPayload(attempts) };
+}
+
+async function classPayload(user) {
+  const quizFilter = user.role === 'admin' ? {} : { createdBy: user.id };
+  const quizzes = await Quiz.find(quizFilter).select('title subject questions').sort({ createdAt: 1 });
+  const quizIds = quizzes.map((q) => q._id);
+
+  const [totalStudents, attempts] = await Promise.all([
+    User.countDocuments({ role: 'student' }),
+    QuizAttempt.find({ quiz: { $in: quizIds }, status: 'submitted' })
+      .populate('quiz', 'title subject')
+      .sort({ submittedAt: 1 }),
+  ]);
+
+  const graded = await buildAttemptPayload(attempts);
+  return {
+    totalStudents,
+    quizzes: quizzes.map((q) => ({
+      quizId: q._id.toString(),
+      title: q.title,
+      subject: q.subject,
+      questionCount: q.questions.length,
+    })),
+    attempts: graded.map(({ studentId, quizId, submittedAt, score, totalQuestions, questions }) => ({
+      studentId, quizId, submittedAt, score, totalQuestions, questions,
+    })),
+  };
+}
+
 /**
  * GET /api/analytics/me  (CSQP-27 / CSQP-F-040)
  * The logged-in student's quiz history, score trend and topic strengths.
@@ -58,14 +92,7 @@ async function buildAttemptPayload(attempts) {
  */
 exports.getMyPerformance = async (req, res, next) => {
   try {
-    const attempts = await QuizAttempt.find({ student: req.user.id, status: 'submitted' })
-      .populate('quiz', 'title subject')
-      .sort({ submittedAt: 1 });
-
-    const summary = await analyticsClient.getStudentSummary({
-      studentId: req.user.id,
-      attempts: await buildAttemptPayload(attempts),
-    });
+    const summary = await analyticsClient.getStudentSummary(await studentPayload(req.user));
 
     return res.status(200).json({
       success: true,
@@ -106,30 +133,7 @@ function unavailable(res, error) {
  */
 exports.getClassAnalytics = async (req, res, next) => {
   try {
-    const quizFilter = req.user.role === 'admin' ? {} : { createdBy: req.user.id };
-    const quizzes = await Quiz.find(quizFilter).select('title subject questions').sort({ createdAt: 1 });
-    const quizIds = quizzes.map((q) => q._id);
-
-    const [totalStudents, attempts] = await Promise.all([
-      User.countDocuments({ role: 'student' }),
-      QuizAttempt.find({ quiz: { $in: quizIds }, status: 'submitted' })
-        .populate('quiz', 'title subject')
-        .sort({ submittedAt: 1 }),
-    ]);
-
-    const graded = await buildAttemptPayload(attempts);
-    const summary = await analyticsClient.getClassSummary({
-      totalStudents,
-      quizzes: quizzes.map((q) => ({
-        quizId: q._id.toString(),
-        title: q.title,
-        subject: q.subject,
-        questionCount: q.questions.length,
-      })),
-      attempts: graded.map(({ studentId, quizId, submittedAt, score, totalQuestions, questions }) => ({
-        studentId, quizId, submittedAt, score, totalQuestions, questions,
-      })),
-    });
+    const summary = await analyticsClient.getClassSummary(await classPayload(req.user));
 
     return res.status(200).json({
       success: true,
@@ -137,6 +141,65 @@ exports.getClassAnalytics = async (req, res, next) => {
       summary,
       timestamp: new Date().toISOString(),
     });
+  } catch (error) {
+    if (error instanceof analyticsClient.AnalyticsUnavailableError) return unavailable(res, error);
+    return next(error);
+  }
+};
+
+const REPORT_FORMATS = ['pdf', 'csv'];
+
+function sendReport(res, file) {
+  res.set('Content-Type', file.contentType);
+  res.set('Content-Disposition', file.disposition);
+  res.set('Cache-Control', 'no-store');
+  return res.status(200).send(file.content);
+}
+
+function badFormat(res) {
+  return res.status(400).json({
+    success: false,
+    statusCode: 400,
+    error: 'INVALID_FORMAT',
+    message: `format must be one of: ${REPORT_FORMATS.join(', ')}`,
+    timestamp: new Date().toISOString(),
+  });
+}
+
+/**
+ * GET /api/analytics/me/export?format=pdf|csv  (CSQP-30 / CSQP-F-043)
+ * Built from the same data as GET /api/analytics/me, so the file matches the screen.
+ */
+exports.exportMyPerformance = async (req, res, next) => {
+  const format = (req.query.format || 'pdf').toLowerCase();
+  if (!REPORT_FORMATS.includes(format)) return badFormat(res);
+  try {
+    const payload = await studentPayload(req.user);
+    const file = await analyticsClient.getStudentReport(
+      { ...payload, studentName: req.user.name || req.user.email || 'Student' },
+      format,
+    );
+    return sendReport(res, file);
+  } catch (error) {
+    if (error instanceof analyticsClient.AnalyticsUnavailableError) return unavailable(res, error);
+    return next(error);
+  }
+};
+
+/**
+ * GET /api/analytics/class/export?format=pdf|csv  (CSQP-30 / CSQP-F-043)
+ * Built from the same data as GET /api/analytics/class.
+ */
+exports.exportClassAnalytics = async (req, res, next) => {
+  const format = (req.query.format || 'pdf').toLowerCase();
+  if (!REPORT_FORMATS.includes(format)) return badFormat(res);
+  try {
+    const payload = await classPayload(req.user);
+    const file = await analyticsClient.getClassReport(
+      { ...payload, instructorName: req.user.name || req.user.email || 'Instructor' },
+      format,
+    );
+    return sendReport(res, file);
   } catch (error) {
     if (error instanceof analyticsClient.AnalyticsUnavailableError) return unavailable(res, error);
     return next(error);

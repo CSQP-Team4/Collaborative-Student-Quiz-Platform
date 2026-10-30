@@ -46,6 +46,8 @@ app.use((req, res, next) => {
 app.use(cors({
   origin: true,
   credentials: true,
+  // Lets the browser read the file name of report downloads (CSQP-30).
+  exposedHeaders: ['Content-Disposition'],
 }));
 app.use(cookieParser());
 app.use(express.json());
