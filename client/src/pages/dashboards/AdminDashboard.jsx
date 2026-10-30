@@ -11,8 +11,14 @@ const TILES = [
     description: 'Logins, lockouts and approval actions with user, IP and time.',
   },
   {
-    title: 'System health',
-    description: 'API, database and analytics service status.',
+    title: 'Uptime report',
+    description: 'Monthly availability vs the 99.5% target, incidents and planned maintenance.',
+    to: '/admin/uptime',
+  },
+  {
+    title: 'Leaderboard',
+    description: 'Rankings of students who opted in, per quiz or subject.',
+    to: '/leaderboard',
   },
 ];
 
