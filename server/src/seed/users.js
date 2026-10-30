@@ -5,9 +5,10 @@
 const SEED_USERS = [
   { key: 'admin', name: 'Demo Admin', email: 'admin@pes.edu', role: 'admin' },
   { key: 'instructor', name: 'Demo Instructor', email: 'instructor@pes.edu', role: 'instructor' },
+  // Demo Student starts hidden so the opt-in toggle can be demoed (CSQP-29).
   { key: 'student', name: 'Demo Student', email: 'student@pes.edu', role: 'student' },
-  { key: 'student2', name: 'Rahul Nair', email: 'student2@pes.edu', role: 'student' },
-  { key: 'student3', name: 'Priya Sharma', email: 'student3@pes.edu', role: 'student' },
+  { key: 'student2', name: 'Rahul Nair', email: 'student2@pes.edu', role: 'student', leaderboardOptIn: true },
+  { key: 'student3', name: 'Priya Sharma', email: 'student3@pes.edu', role: 'student', leaderboardOptIn: true },
 ];
 
 module.exports = { SEED_USERS };

@@ -57,6 +57,11 @@ const userSchema = new mongoose.Schema(
     lockUntil: {
       type: Date,
     },
+    // CSQP-F-042: students appear on the leaderboard only if they opt in.
+    leaderboardOptIn: {
+      type: Boolean,
+      default: false,
+    },
     refreshTokens: {
       type: [String],
       select: false,

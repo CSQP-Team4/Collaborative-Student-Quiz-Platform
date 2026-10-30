@@ -19,6 +19,16 @@ const TILES = [
     description: 'Score trends and topic-wise strengths and weaknesses.',
     to: '/student/progress',
   },
+  {
+    title: 'Leaderboard',
+    description: 'See how you rank per quiz or subject (only if you opt in).',
+    to: '/leaderboard',
+  },
+  {
+    title: 'Profile settings',
+    description: 'Choose whether you appear on the leaderboard.',
+    to: '/student/settings',
+  },
 ];
 
 export default function StudentDashboard() {
