@@ -16,6 +16,9 @@ export default function DashboardLayout({ title, intro, tiles = [], children }) 
 
   return (
     <div className="dashboard">
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
       <header className="dashboard-header">
         <p className="brand">CSQP</p>
         <div className="dashboard-user">
@@ -27,7 +30,7 @@ export default function DashboardLayout({ title, intro, tiles = [], children }) 
         </div>
       </header>
 
-      <main className="dashboard-main">
+      <main className="dashboard-main" id="main-content" tabIndex={-1}>
         <h1>{title}</h1>
         <p className="dashboard-intro">{intro}</p>
         {tiles.length > 0 && (

@@ -86,6 +86,12 @@ export default function QuizAttemptPage() {
     return () => clearInterval(timer);
   }, [isAttemptActive, timeLeft]);
 
+  // CSQP-33 (WCAG 2.2.1 / 4.1.3): announce time milestones to screen-reader users.
+  const timeAnnouncement = useMemo(() => {
+    const milestones = { 300: '5 minutes remaining.', 60: '1 minute remaining.', 10: '10 seconds remaining.' };
+    return milestones[timeLeft] || '';
+  }, [timeLeft]);
+
   const formattedTime = useMemo(() => {
     if (timeLeft === null) return '--:--';
     const minutes = Math.floor(timeLeft / 60);
@@ -154,10 +160,10 @@ export default function QuizAttemptPage() {
             sessions. You may resume your active attempt.
           </p>
           <div className="quiz-actions">
-            <button className="btn-primary" onClick={handleResume}>
+            <button className="btn btn-primary" onClick={handleResume}>
               Resume Active Attempt
             </button>
-            <Link to="/student" className="btn-secondary">
+            <Link to="/student" className="btn btn-secondary">
               Back to Dashboard
             </Link>
           </div>
@@ -172,7 +178,7 @@ export default function QuizAttemptPage() {
         <div className="quiz-card">
           <h1>Quiz Error</h1>
           <p className="error-message">{error}</p>
-          <Link to="/student" className="btn-secondary">
+          <Link to="/student" className="btn btn-secondary">
             Back to Dashboard
           </Link>
         </div>
@@ -210,7 +216,7 @@ export default function QuizAttemptPage() {
           )}
 
           <div className="quiz-actions">
-            <Link to="/student" className="btn-primary">
+            <Link to="/student" className="btn btn-primary">
               Return to Dashboard
             </Link>
           </div>
@@ -227,27 +233,36 @@ export default function QuizAttemptPage() {
       <header className="quiz-header">
         <div className="quiz-header-left">
           <span className="brand">CSQP QUIZ</span>
-          <h2>{attempt?.quizTitle || 'Quiz'}</h2>
+          <h1>{attempt?.quizTitle || 'Quiz'}</h1>
         </div>
         <div className="quiz-header-right">
+          {/* CSQP-33: role="timer" so screen readers can find the countdown; it is
+              not read out every second, only the milestones announced below. */}
           <div
             className={`timer-badge ${timeLeft !== null && timeLeft < 120 ? 'timer-warning' : ''}`}
-            aria-label="Time remaining"
+            role="timer"
+            aria-label={`Time remaining ${formattedTime}`}
           >
-            ⏱ {formattedTime}
+            <span aria-hidden="true">⏱ </span>
+            {formattedTime}
           </div>
+          <p className="sr-only" aria-live="assertive">
+            {timeAnnouncement}
+          </p>
         </div>
       </header>
 
       {/* Anti-Cheat Warning Banners (CSQP-23) */}
       {isFlagged ? (
         <div className="anti-cheat-banner alert-flagged" role="alert">
-          ⚠️ <strong>Security Notice:</strong> Multiple violations detected (violation count:{' '}
+          <span aria-hidden="true">⚠️ </span>
+          <strong>Security Notice:</strong> Multiple violations detected (violation count:{' '}
           {violationCount}). This attempt has been flagged for instructor review.
         </div>
       ) : violationCount > 0 ? (
         <div className="anti-cheat-banner alert-warning" role="alert">
-          ⚠️ <strong>Anti-Cheat Warning:</strong> Tab switching and clipboard operations are
+          <span aria-hidden="true">⚠️ </span>
+          <strong>Anti-Cheat Warning:</strong> Tab switching and clipboard operations are
           monitored ({violationCount}/3 violations).
         </div>
       ) : null}
@@ -262,7 +277,9 @@ export default function QuizAttemptPage() {
               <span className="question-badge">{currentQuestion.difficulty || 'Medium'}</span>
             </div>
 
-            <h3 className="question-text">{currentQuestion.text}</h3>
+            <h2 className="question-text" id="question-text">
+              {currentQuestion.text}
+            </h2>
 
             <div className="options-list" role="radiogroup" aria-labelledby="question-text">
               {currentQuestion.options?.map((opt, idx) => {
@@ -287,7 +304,7 @@ export default function QuizAttemptPage() {
             <div className="question-nav">
               <button
                 type="button"
-                className="btn-secondary"
+                className="btn btn-secondary"
                 disabled={currentIdx === 0}
                 onClick={() => setCurrentIdx((i) => i - 1)}
               >
@@ -297,7 +314,7 @@ export default function QuizAttemptPage() {
               {currentIdx < questions.length - 1 ? (
                 <button
                   type="button"
-                  className="btn-primary"
+                  className="btn btn-primary"
                   onClick={() => setCurrentIdx((i) => i + 1)}
                 >
                   Next
@@ -305,7 +322,7 @@ export default function QuizAttemptPage() {
               ) : (
                 <button
                   type="button"
-                  className="btn-primary btn-submit"
+                  className="btn btn-primary btn-submit"
                   disabled={submitting}
                   onClick={handleSubmit}
                 >
