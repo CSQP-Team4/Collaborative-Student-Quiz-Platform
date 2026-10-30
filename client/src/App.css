@@ -799,3 +799,89 @@
     white-space: normal;
   }
 }
+
+/* ---------- Uptime report (CSQP-35) ---------- */
+.status-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+}
+
+.status-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.status-up .status-dot {
+  background: var(--success);
+}
+
+.status-down .status-dot {
+  background: var(--danger);
+}
+
+.status-up strong {
+  color: var(--success);
+}
+
+.status-down strong {
+  color: var(--danger);
+}
+
+.panel-sub-inline {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.pill {
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 999px;
+}
+
+.pill-ok {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.pill-bad {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.incident-list {
+  margin: 0 0 16px;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+}
+
+.maintenance-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0 12px;
+  align-items: end;
+}
+
+.maintenance-form .field {
+  margin-bottom: 12px;
+}
+
+.maintenance-form input {
+  height: 46px;
+}
+
+.maintenance-form .btn {
+  margin-bottom: 12px;
+}
+
+.mw-error {
+  grid-column: 1 / -1;
+  margin-top: 0;
+}

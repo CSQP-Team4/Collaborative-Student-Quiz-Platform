@@ -8,7 +8,8 @@
     "benchmark": "node --experimental-vm-modules node_modules/jest/bin/jest.js src/_tests_/performance_benchmark.test.js",
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "seed": "node src/seed/run.js"
+    "seed": "node src/seed/run.js",
+    "monitor": "node src/monitoring/run.js"
   },
   "keywords": [],
   "author": "",
