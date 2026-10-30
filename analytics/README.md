@@ -30,6 +30,7 @@ pytest
 | GET | `/health` | Liveness + confirms pandas and reportlab are installed |
 | GET | `/api/ping` | Round-trip check from the Express API |
 | POST | `/api/students/summary` | Student dashboard: quiz history, score trend, topic strengths (CSQP-27 / F-040) |
+| POST | `/api/quizzes/class-summary` | Class analytics per quiz: average, participation, most-missed questions (CSQP-28 / F-041) |
 | GET | `/api/mock/students/{studentId}/summary` | Mock student dashboard data (shape of CSQP-F-040) |
 | GET | `/api/mock/quizzes/{quizId}/class-summary` | Mock class analytics (shape of CSQP-F-041) |
 
@@ -64,3 +65,12 @@ async function getStudentSummary(studentId) {
 | --- | --- | --- |
 | `ANALYTICS_PORT` | `8001` | Port when run with `python -m app.main` |
 | `ANALYTICS_INTERNAL_TOKEN` | empty | If set, `/api/*` calls must send `X-Internal-Token` with this value |
+
+### Class analytics (CSQP-28)
+
+The Express route `GET /api/analytics/class` (instructors see their own quizzes,
+admins see all) sends graded attempts here. Rules, so totals can be checked by hand:
+
+- Each student counts **once per quiz**, using their latest submitted attempt (retakes don't skew the average).
+- Participation rate = students who submitted / all students.
+- Most-missed questions = lowest correct rate first, top 5, only questions someone got wrong.

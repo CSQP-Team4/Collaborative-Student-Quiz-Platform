@@ -1,5 +1,7 @@
 const QuizAttempt = require('../models/QuizAttempt');
 const Question = require('../models/Question');
+const Quiz = require('../models/Quiz');
+const User = require('../models/User');
 const analyticsClient = require('../services/analyticsClient');
 
 const normalize = (value) => (value ?? '').toString().trim().toLowerCase();
@@ -15,7 +17,7 @@ async function buildAttemptPayload(attempts) {
     for (const sq of a.shuffledQuestions) questionIds.add(sq.question.toString());
   }
 
-  const questions = await Question.find({ _id: { $in: [...questionIds] } }).select('+answer topic');
+  const questions = await Question.find({ _id: { $in: [...questionIds] } }).select('+answer topic text');
   const byId = new Map(questions.map((q) => [q._id.toString(), q]));
 
   return attempts.map((a) => {
@@ -27,6 +29,8 @@ async function buildAttemptPayload(attempts) {
       const key = normalize(byId.get(id)?.answer);
       const given = answers.get(id) || '';
       return {
+        questionId: id,
+        text: sq.text || byId.get(id)?.text || '',
         topic: sq.topic || byId.get(id)?.topic || 'General',
         correct: Boolean(given) && given === key,
       };
@@ -34,6 +38,7 @@ async function buildAttemptPayload(attempts) {
 
     return {
       attemptId: a._id.toString(),
+      studentId: a.student?._id?.toString() || a.student?.toString() || '',
       quizId: a.quiz?._id?.toString() || a.quiz?.toString() || '',
       quizTitle: a.quiz?.title || 'Quiz',
       subject: a.quiz?.subject || '',
@@ -78,6 +83,62 @@ exports.getMyPerformance = async (req, res, next) => {
         timestamp: new Date().toISOString(),
       });
     }
+    return next(error);
+  }
+};
+
+function unavailable(res, error) {
+  return res.status(503).json({
+    success: false,
+    statusCode: 503,
+    error: error.code,
+    message: error.message,
+    timestamp: new Date().toISOString(),
+  });
+}
+
+/**
+ * GET /api/analytics/class  (CSQP-28 / CSQP-F-041)
+ * Per-quiz class analytics for the logged-in instructor's quizzes
+ * (admins see every quiz): average score, participation rate and the
+ * most-missed questions. Recomputed on every request, so each new
+ * submission is included straight away.
+ */
+exports.getClassAnalytics = async (req, res, next) => {
+  try {
+    const quizFilter = req.user.role === 'admin' ? {} : { createdBy: req.user.id };
+    const quizzes = await Quiz.find(quizFilter).select('title subject questions').sort({ createdAt: 1 });
+    const quizIds = quizzes.map((q) => q._id);
+
+    const [totalStudents, attempts] = await Promise.all([
+      User.countDocuments({ role: 'student' }),
+      QuizAttempt.find({ quiz: { $in: quizIds }, status: 'submitted' })
+        .populate('quiz', 'title subject')
+        .sort({ submittedAt: 1 }),
+    ]);
+
+    const graded = await buildAttemptPayload(attempts);
+    const summary = await analyticsClient.getClassSummary({
+      totalStudents,
+      quizzes: quizzes.map((q) => ({
+        quizId: q._id.toString(),
+        title: q.title,
+        subject: q.subject,
+        questionCount: q.questions.length,
+      })),
+      attempts: graded.map(({ studentId, quizId, submittedAt, score, totalQuestions, questions }) => ({
+        studentId, quizId, submittedAt, score, totalQuestions, questions,
+      })),
+    });
+
+    return res.status(200).json({
+      success: true,
+      statusCode: 200,
+      summary,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    if (error instanceof analyticsClient.AnalyticsUnavailableError) return unavailable(res, error);
     return next(error);
   }
 };

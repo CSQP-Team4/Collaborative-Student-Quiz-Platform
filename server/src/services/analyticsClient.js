@@ -47,4 +47,5 @@ async function post(path, body) {
 module.exports = {
   AnalyticsUnavailableError,
   getStudentSummary: (payload) => post('/api/students/summary', payload),
+  getClassSummary: (payload) => post('/api/quizzes/class-summary', payload),
 };

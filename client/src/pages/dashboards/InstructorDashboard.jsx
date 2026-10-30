@@ -17,6 +17,7 @@ const TILES = [
   {
     title: 'Class analytics',
     description: 'Averages, most-missed questions and participation per quiz.',
+    to: '/instructor/analytics',
   },
 ];
 
