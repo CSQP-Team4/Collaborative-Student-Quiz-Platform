@@ -16,6 +16,7 @@ from fastapi.responses import JSONResponse, Response
 
 from app import __version__, config, mock_data, reports
 from app.class_analytics import ClassSummaryRequest, build_class_summary
+from app.leaderboard import LeaderboardRequest, build_leaderboard
 from app.student_performance import StudentSummaryRequest, build_student_summary
 
 ReportFormat = Literal["pdf", "csv"]
@@ -88,6 +89,12 @@ def student_summary(body: StudentSummaryRequest) -> dict:
 def class_summary(body: ClassSummaryRequest) -> dict:
     """CSQP-F-041: average score, participation and most-missed questions per quiz."""
     return build_class_summary(body)
+
+
+@app.post("/api/leaderboard", dependencies=[Depends(check_internal_token)])
+def leaderboard(body: LeaderboardRequest) -> dict:
+    """CSQP-F-042: rank opted-in students per quiz or per subject."""
+    return build_leaderboard(body)
 
 
 # ---- Report exports (CSQP-F-043): same summaries as the dashboards ----

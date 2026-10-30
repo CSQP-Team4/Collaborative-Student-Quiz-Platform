@@ -62,6 +62,7 @@ module.exports = {
   AnalyticsUnavailableError,
   getStudentSummary: (payload) => post('/api/students/summary', payload),
   getClassSummary: (payload) => post('/api/quizzes/class-summary', payload),
+  getLeaderboard: (payload) => post('/api/leaderboard', payload),
   getStudentReport: (payload, format) => postFile(`/api/reports/student?format=${format}`, payload),
   getClassReport: (payload, format) => postFile(`/api/reports/class?format=${format}`, payload),
 };

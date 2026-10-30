@@ -19,6 +19,11 @@ const TILES = [
     description: 'Averages, most-missed questions and participation per quiz.',
     to: '/instructor/analytics',
   },
+  {
+    title: 'Leaderboard',
+    description: 'Rankings of students who opted in, per quiz or subject.',
+    to: '/leaderboard',
+  },
 ];
 
 export default function InstructorDashboard() {

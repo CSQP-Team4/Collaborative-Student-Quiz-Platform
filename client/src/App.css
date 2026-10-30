@@ -703,3 +703,99 @@
 .export-buttons .field-error {
   margin-top: 6px;
 }
+
+/* ---------- Leaderboard and profile settings (CSQP-29) ---------- */
+.leaderboard-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.segment {
+  font: inherit;
+  font-weight: 600;
+  padding: 9px 14px;
+  background: var(--surface);
+  color: var(--text-h);
+  border: none;
+  cursor: pointer;
+}
+
+.segment + .segment {
+  border-left: 1px solid var(--border);
+}
+
+.segment-on {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.leaderboard-select {
+  margin-bottom: 0;
+  flex: 1 1 220px;
+}
+
+.field select {
+  width: 100%;
+  padding: 10px 12px;
+  font: inherit;
+  color: var(--text-h);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.row-you td {
+  background: var(--accent-soft);
+  font-weight: 600;
+}
+
+.you-badge {
+  margin-left: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.switch-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  cursor: pointer;
+}
+
+.switch-row input {
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  accent-color: var(--accent);
+  flex-shrink: 0;
+}
+
+.switch-row .field-hint {
+  display: block;
+  margin-top: 2px;
+}
+
+.notice-info {
+  background: var(--accent-soft);
+  color: var(--text-h);
+  border-left: 4px solid var(--accent);
+}
+
+@media (max-width: 560px) {
+  .data-table th {
+    white-space: normal;
+  }
+}

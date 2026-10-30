@@ -15,6 +15,8 @@ import InstructorDashboard from './pages/dashboards/InstructorDashboard';
 import StudentDashboard from './pages/dashboards/StudentDashboard';
 import StudentProgressPage from './pages/StudentProgressPage';
 import ClassAnalyticsPage from './pages/ClassAnalyticsPage';
+import LeaderboardPage from './pages/LeaderboardPage';
+import ProfileSettingsPage from './pages/ProfileSettingsPage';
 import './App.css';
 
 // "/" sends logged-in users to their role's dashboard, everyone else to login.
@@ -78,6 +80,22 @@ export default function App() {
         element={
           <ProtectedRoute allowedRoles={[ROLES.INSTRUCTOR, ROLES.ADMIN]}>
             <ClassAnalyticsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/leaderboard"
+        element={
+          <ProtectedRoute allowedRoles={[ROLES.STUDENT, ROLES.INSTRUCTOR, ROLES.ADMIN]}>
+            <LeaderboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student/settings"
+        element={
+          <ProtectedRoute allowedRoles={[ROLES.STUDENT]}>
+            <ProfileSettingsPage />
           </ProtectedRoute>
         }
       />

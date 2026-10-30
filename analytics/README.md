@@ -31,6 +31,7 @@ pytest
 | GET | `/api/ping` | Round-trip check from the Express API |
 | POST | `/api/students/summary` | Student dashboard: quiz history, score trend, topic strengths (CSQP-27 / F-040) |
 | POST | `/api/quizzes/class-summary` | Class analytics per quiz: average, participation, most-missed questions (CSQP-28 / F-041) |
+| POST | `/api/leaderboard` | Opt-in leaderboard per quiz or subject (CSQP-29 / F-042) |
 | POST | `/api/reports/student?format=pdf\|csv` | Student progress report file (CSQP-30 / F-043) |
 | POST | `/api/reports/class?format=pdf\|csv` | Class analytics report file (CSQP-30 / F-043) |
 | GET | `/api/mock/students/{studentId}/summary` | Mock student dashboard data (shape of CSQP-F-040) |
@@ -84,3 +85,11 @@ from the same summary functions as the dashboards, so the file always matches th
 Express exposes them as `GET /api/analytics/me/export?format=pdf|csv` (students) and
 `GET /api/analytics/class/export?format=pdf|csv` (instructors/admins). CSV files hold several
 titled tables separated by a blank line and start with a UTF-8 BOM so Excel opens them correctly.
+
+### Leaderboard (CSQP-29)
+
+Students are **hidden by default** and opt in from *Profile settings* (`PUT /api/leaderboard/settings`).
+Express (`GET /api/leaderboard?scope=quiz|subject&id=...`) only sends opted-in students' attempts here,
+so students who opted out can never appear. Per quiz = each student's best score; per subject =
+average of their best score on each quiz in that subject. Ties share a rank (1, 1, 3).
+Seed data: Rahul Nair and Priya Sharma are opted in; Demo Student starts hidden so the toggle can be demoed.
