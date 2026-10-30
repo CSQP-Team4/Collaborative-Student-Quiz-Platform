@@ -1,10 +1,11 @@
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import { ROLE_LABEL } from '../../auth/roles';
 
 // Shell shared by the Student, Instructor and Admin dashboards (CSQP-12).
-// Each tile names the story that will fill it in.
-export default function DashboardLayout({ title, intro, tiles }) {
+// Pages render their own content as children; dashboards pass `tiles`.
+// A tile with `to` becomes a link to that page.
+export default function DashboardLayout({ title, intro, tiles = [], children }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -29,14 +30,17 @@ export default function DashboardLayout({ title, intro, tiles }) {
       <main className="dashboard-main">
         <h1>{title}</h1>
         <p className="dashboard-intro">{intro}</p>
-        <ul className="tile-grid">
-          {tiles.map((tile) => (
-            <li key={tile.title} className="tile">
-              <h2>{tile.title}</h2>
-              <p>{tile.description}</p>
-            </li>
-          ))}
-        </ul>
+        {tiles.length > 0 && (
+          <ul className="tile-grid">
+            {tiles.map((tile) => (
+              <li key={tile.title} className={tile.to ? 'tile tile-link' : 'tile'}>
+                <h2>{tile.to ? <Link to={tile.to}>{tile.title}</Link> : tile.title}</h2>
+                <p>{tile.description}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+        {children}
       </main>
     </div>
   );

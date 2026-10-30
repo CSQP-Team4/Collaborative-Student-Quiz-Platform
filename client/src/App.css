@@ -429,3 +429,225 @@
   gap: 12px;
   margin-top: 20px;
 }
+
+/* ---------- Student progress (CSQP-27) ---------- */
+.tile-link h2 a {
+  color: var(--text-h);
+  text-decoration: none;
+}
+
+.tile-link h2 a::after {
+  content: ' →';
+  color: var(--accent);
+}
+
+.tile-link:hover,
+.tile-link:focus-within {
+  border-color: var(--accent);
+}
+
+.back-link {
+  margin: -12px 0 20px;
+}
+
+.empty-state {
+  padding: 24px;
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  color: var(--muted);
+}
+
+.stat-row {
+  list-style: none;
+  margin: 0 0 20px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.stat-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-h);
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.panel {
+  margin-bottom: 20px;
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.panel h2 {
+  margin: 0 0 12px;
+  font-size: 1.15rem;
+}
+
+.trend-chart {
+  margin: 0;
+}
+
+.trend-chart svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.trend-chart figcaption {
+  margin-top: 6px;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.trend-grid {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.trend-axis {
+  fill: var(--muted);
+  font-size: 13px;
+}
+
+.trend-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.trend-dot {
+  fill: var(--surface);
+  stroke: var(--accent);
+  stroke-width: 3;
+}
+
+.topic-tip {
+  margin: 0 0 12px;
+}
+
+.topic-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+
+.topic-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.topic-name {
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.topic-status {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.topic-strength .topic-status {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.topic-weakness .topic-status {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.topic-bar {
+  height: 8px;
+  background: var(--code-bg);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.topic-bar span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+.topic-strength .topic-bar span {
+  background: var(--success);
+}
+
+.topic-weakness .topic-bar span {
+  background: var(--danger);
+}
+
+.topic-meta {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.data-table th,
+.data-table td {
+  padding: 10px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.data-table th {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.data-table td {
+  color: var(--text-h);
+}
+
+@media (max-width: 560px) {
+  .panel {
+    padding: 16px;
+  }
+
+  .data-table .col-optional {
+    display: none;
+  }
+
+  .data-table td:first-child {
+    white-space: normal;
+  }
+}

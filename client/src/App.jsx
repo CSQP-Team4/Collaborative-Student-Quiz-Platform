@@ -13,6 +13,7 @@ import QuizAttemptPage from './pages/QuizAttemptPage';
 import AdminDashboard from './pages/dashboards/AdminDashboard';
 import InstructorDashboard from './pages/dashboards/InstructorDashboard';
 import StudentDashboard from './pages/dashboards/StudentDashboard';
+import StudentProgressPage from './pages/StudentProgressPage';
 import './App.css';
 
 // "/" sends logged-in users to their role's dashboard, everyone else to login.
@@ -44,6 +45,14 @@ export default function App() {
         element={
           <ProtectedRoute allowedRoles={[ROLES.STUDENT]}>
             <StudentDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student/progress"
+        element={
+          <ProtectedRoute allowedRoles={[ROLES.STUDENT]}>
+            <StudentProgressPage />
           </ProtectedRoute>
         }
       />
