@@ -5,6 +5,7 @@ const healthRouter = require('./routes/health');
 const authRouter = require('./routes/auth');
 const usersRouter = require('./routes/users');
 const quizzesRouter = require('./routes/quizzes');
+const analyticsRouter = require('./routes/analytics');
 const {
   requestIdMiddleware,
   requestLoggingMiddleware,
@@ -53,6 +54,7 @@ app.use(express.json());
 app.use('/api', healthRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
+app.use('/api/analytics', analyticsRouter);
 app.use('/api', quizzesRouter);
 
 // Handle unknown endpoints

@@ -17,6 +17,7 @@ const TILES = [
   {
     title: 'My progress',
     description: 'Score trends and topic-wise strengths and weaknesses.',
+    to: '/student/progress',
   },
 ];
 

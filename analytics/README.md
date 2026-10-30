@@ -29,11 +29,19 @@ pytest
 | --- | --- | --- |
 | GET | `/health` | Liveness + confirms pandas and reportlab are installed |
 | GET | `/api/ping` | Round-trip check from the Express API |
+| POST | `/api/students/summary` | Student dashboard: quiz history, score trend, topic strengths (CSQP-27 / F-040) |
 | GET | `/api/mock/students/{studentId}/summary` | Mock student dashboard data (shape of CSQP-F-040) |
 | GET | `/api/mock/quizzes/{quizId}/class-summary` | Mock class analytics (shape of CSQP-F-041) |
 
 The mock endpoints let the Node API be tested without real analytics (STP 10).
-Real endpoints replace them in Sprint 2.
+
+### Student dashboard (CSQP-27)
+
+The Express route `GET /api/analytics/me` loads the student's submitted attempts,
+grades every question (answer keys never leave Express) and posts them here.
+A topic is a **strength** at 75% correct or more and a **weakness** below 50%.
+The data is computed on every request, so a quiz appears on the dashboard
+as soon as it is submitted.
 
 ## Calling it from Express
 

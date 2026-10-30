@@ -14,6 +14,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.responses import JSONResponse
 
 from app import __version__, config, mock_data
+from app.student_performance import StudentSummaryRequest, build_student_summary
 
 app = FastAPI(
     title="CSQP Analytics Service",
@@ -51,6 +52,14 @@ def health() -> dict:
 def ping() -> dict:
     """Round-trip check that the Express API can reach this service."""
     return {"message": "pong", "service": config.SERVICE_NAME}
+
+
+# ---- Real analytics endpoints ----
+
+@app.post("/api/students/summary", dependencies=[Depends(check_internal_token)])
+def student_summary(body: StudentSummaryRequest) -> dict:
+    """CSQP-F-040: quiz history, score trend and topic strengths for one student."""
+    return build_student_summary(body)
 
 
 # ---- Mock endpoints (STP 10: mock analytics during API functional testing) ----
