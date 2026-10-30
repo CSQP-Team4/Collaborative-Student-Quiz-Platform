@@ -31,6 +31,8 @@ pytest
 | GET | `/api/ping` | Round-trip check from the Express API |
 | POST | `/api/students/summary` | Student dashboard: quiz history, score trend, topic strengths (CSQP-27 / F-040) |
 | POST | `/api/quizzes/class-summary` | Class analytics per quiz: average, participation, most-missed questions (CSQP-28 / F-041) |
+| POST | `/api/reports/student?format=pdf\|csv` | Student progress report file (CSQP-30 / F-043) |
+| POST | `/api/reports/class?format=pdf\|csv` | Class analytics report file (CSQP-30 / F-043) |
 | GET | `/api/mock/students/{studentId}/summary` | Mock student dashboard data (shape of CSQP-F-040) |
 | GET | `/api/mock/quizzes/{quizId}/class-summary` | Mock class analytics (shape of CSQP-F-041) |
 
@@ -74,3 +76,11 @@ admins see all) sends graded attempts here. Rules, so totals can be checked by h
 - Each student counts **once per quiz**, using their latest submitted attempt (retakes don't skew the average).
 - Participation rate = students who submitted / all students.
 - Most-missed questions = lowest correct rate first, top 5, only questions someone got wrong.
+
+### Report export (CSQP-30)
+
+PDF files are made with reportlab and CSV files with pandas (SAD 3.6). Reports are built
+from the same summary functions as the dashboards, so the file always matches the screen.
+Express exposes them as `GET /api/analytics/me/export?format=pdf|csv` (students) and
+`GET /api/analytics/class/export?format=pdf|csv` (instructors/admins). CSV files hold several
+titled tables separated by a blank line and start with a UTF-8 BOM so Excel opens them correctly.

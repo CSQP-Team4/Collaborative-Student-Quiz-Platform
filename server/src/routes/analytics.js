@@ -15,4 +15,18 @@ router.get(
   analyticsController.getClassAnalytics,
 );
 
+// CSQP-30 / CSQP-F-043: export the same reports as PDF or CSV
+router.get(
+  '/me/export',
+  authenticateToken,
+  authorizeRoles('student'),
+  analyticsController.exportMyPerformance,
+);
+router.get(
+  '/class/export',
+  authenticateToken,
+  authorizeRoles('instructor', 'admin'),
+  analyticsController.exportClassAnalytics,
+);
+
 module.exports = router;

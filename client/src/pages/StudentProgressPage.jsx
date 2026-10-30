@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import ExportButtons from '../components/ExportButtons';
 import ScoreTrendChart from '../components/ScoreTrendChart';
 import analyticsService from '../services/analyticsService';
 import DashboardLayout from './dashboards/DashboardLayout';
@@ -49,9 +50,12 @@ export default function StudentProgressPage() {
       title="My progress"
       intro="Your quiz history, score trend and topic strengths."
     >
-      <p className="back-link">
+      <div className="page-actions">
         <Link to="/student">← Back to dashboard</Link>
-      </p>
+        {!loading && !error && summary && (
+          <ExportButtons onExport={(format) => analyticsService.exportMyPerformance(format)} />
+        )}
+      </div>
 
       {loading && (
         <p role="status" className="page-status">

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import ExportButtons from '../components/ExportButtons';
 import analyticsService from '../services/analyticsService';
 import DashboardLayout from './dashboards/DashboardLayout';
 
@@ -116,9 +117,14 @@ export default function ClassAnalyticsPage() {
       <div className="page-actions">
         <Link to="/">← Back to dashboard</Link>
         {!loading && (
-          <button type="button" className="btn btn-secondary" onClick={refresh}>
-            {error ? 'Try again' : 'Refresh'}
-          </button>
+          <div className="export-row">
+            <button type="button" className="btn btn-secondary" onClick={refresh}>
+              {error ? 'Try again' : 'Refresh'}
+            </button>
+            {!error && summary?.quizzes.length > 0 && (
+              <ExportButtons onExport={(format) => analyticsService.exportClassAnalytics(format)} />
+            )}
+          </div>
         )}
       </div>
 

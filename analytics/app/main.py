@@ -9,13 +9,34 @@ API docs:      http://localhost:8001/docs
 """
 
 from datetime import datetime, timezone
+from typing import Literal
 
-from fastapi import Depends, FastAPI, Header, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import Depends, FastAPI, Header, HTTPException, Query
+from fastapi.responses import JSONResponse, Response
 
-from app import __version__, config, mock_data
+from app import __version__, config, mock_data, reports
 from app.class_analytics import ClassSummaryRequest, build_class_summary
 from app.student_performance import StudentSummaryRequest, build_student_summary
+
+ReportFormat = Literal["pdf", "csv"]
+MEDIA_TYPES = {"pdf": "application/pdf", "csv": "text/csv; charset=utf-8"}
+
+
+class StudentReportRequest(StudentSummaryRequest):
+    studentName: str = "Student"
+
+
+class ClassReportRequest(ClassSummaryRequest):
+    instructorName: str = "Instructor"
+
+
+def _file(content: bytes, fmt: str, basename: str) -> Response:
+    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    return Response(
+        content=content,
+        media_type=MEDIA_TYPES[fmt],
+        headers={"Content-Disposition": f'attachment; filename="{basename}-{stamp}.{fmt}"'},
+    )
 
 app = FastAPI(
     title="CSQP Analytics Service",
@@ -67,6 +88,24 @@ def student_summary(body: StudentSummaryRequest) -> dict:
 def class_summary(body: ClassSummaryRequest) -> dict:
     """CSQP-F-041: average score, participation and most-missed questions per quiz."""
     return build_class_summary(body)
+
+
+# ---- Report exports (CSQP-F-043): same summaries as the dashboards ----
+
+@app.post("/api/reports/student", dependencies=[Depends(check_internal_token)])
+def student_report(body: StudentReportRequest, format: ReportFormat = Query("pdf")) -> Response:
+    summary = build_student_summary(body)
+    if format == "csv":
+        return _file(reports.student_report_csv(summary, body.studentName), format, "csqp-my-progress")
+    return _file(reports.student_report_pdf(summary, body.studentName), format, "csqp-my-progress")
+
+
+@app.post("/api/reports/class", dependencies=[Depends(check_internal_token)])
+def class_report(body: ClassReportRequest, format: ReportFormat = Query("pdf")) -> Response:
+    summary = build_class_summary(body)
+    if format == "csv":
+        return _file(reports.class_report_csv(summary), format, "csqp-class-analytics")
+    return _file(reports.class_report_pdf(summary, body.instructorName), format, "csqp-class-analytics")
 
 
 # ---- Mock endpoints (STP 10: mock analytics during API functional testing) ----

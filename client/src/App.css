@@ -446,10 +446,6 @@
   border-color: var(--accent);
 }
 
-.back-link {
-  margin: -12px 0 20px;
-}
-
 .empty-state {
   padding: 24px;
   background: var(--surface);
@@ -691,4 +687,19 @@
   .data-table td {
     padding: 10px 6px;
   }
+}
+
+/* ---------- Report export (CSQP-30) ---------- */
+.page-actions {
+  flex-wrap: wrap;
+}
+
+.export-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.export-buttons .field-error {
+  margin-top: 6px;
 }
