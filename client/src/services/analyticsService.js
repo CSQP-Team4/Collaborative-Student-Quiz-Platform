@@ -6,6 +6,12 @@ export const analyticsService = {
     const { data } = await api.get('/analytics/me');
     return data.summary;
   },
+
+  // CSQP-28 / CSQP-F-041: per-quiz class analytics for instructors.
+  async getClassAnalytics() {
+    const { data } = await api.get('/analytics/class');
+    return data.summary;
+  },
 };
 
 export default analyticsService;

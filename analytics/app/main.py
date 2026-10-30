@@ -14,6 +14,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.responses import JSONResponse
 
 from app import __version__, config, mock_data
+from app.class_analytics import ClassSummaryRequest, build_class_summary
 from app.student_performance import StudentSummaryRequest, build_student_summary
 
 app = FastAPI(
@@ -60,6 +61,12 @@ def ping() -> dict:
 def student_summary(body: StudentSummaryRequest) -> dict:
     """CSQP-F-040: quiz history, score trend and topic strengths for one student."""
     return build_student_summary(body)
+
+
+@app.post("/api/quizzes/class-summary", dependencies=[Depends(check_internal_token)])
+def class_summary(body: ClassSummaryRequest) -> dict:
+    """CSQP-F-041: average score, participation and most-missed questions per quiz."""
+    return build_class_summary(body)
 
 
 # ---- Mock endpoints (STP 10: mock analytics during API functional testing) ----
