@@ -3,6 +3,21 @@ import { setAccessToken } from '../api/api';
 import { AuthContext } from './AuthContext';
 import { authService as defaultService } from './authService';
 
+// Refresh tokens are single-use (rotated on every call, CSQP-SR-003). If two
+// refreshes run at once, the second sends the already-used token, the server
+// treats it as token theft and ends the session. React StrictMode runs the
+// startup effect twice in development, which logged users out on every page
+// reload. So concurrent calls share one in-flight request.
+const inFlightRefresh = new WeakMap();
+
+function refreshOnce(service) {
+  if (!inFlightRefresh.has(service)) {
+    const request = service.refresh().finally(() => inFlightRefresh.delete(service));
+    inFlightRefresh.set(service, request);
+  }
+  return inFlightRefresh.get(service);
+}
+
 // Holds the logged-in user. On page load it tries the refresh-token cookie to
 // restore the session, so the access token never has to be stored on disk.
 export default function AuthProvider({ children, service = defaultService }) {
@@ -11,8 +26,7 @@ export default function AuthProvider({ children, service = defaultService }) {
 
   useEffect(() => {
     let cancelled = false;
-    service
-      .refresh()
+    refreshOnce(service)
       .then(({ accessToken, user: restored }) => {
         if (cancelled) return;
         setAccessToken(accessToken);
