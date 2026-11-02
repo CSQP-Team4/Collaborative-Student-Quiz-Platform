@@ -5,6 +5,7 @@ const healthRouter = require('./routes/health');
 const authRouter = require('./routes/auth');
 const usersRouter = require('./routes/users');
 const quizzesRouter = require('./routes/quizzes');
+const questionsRouter = require('./routes/questions');
 const analyticsRouter = require('./routes/analytics');
 const leaderboardRouter = require('./routes/leaderboard');
 const opsRouter = require('./routes/ops');
@@ -62,6 +63,7 @@ app.use('/api/analytics', analyticsRouter);
 app.use('/api/leaderboard', leaderboardRouter);
 app.use('/api/ops', opsRouter);
 app.use('/api', quizzesRouter);
+app.use('/api', questionsRouter);
 
 // Handle unknown endpoints
 app.use((req, res, next) => {
