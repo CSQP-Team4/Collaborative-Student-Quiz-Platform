@@ -4,6 +4,7 @@ const cookieParser = require('cookie-parser');
 const healthRouter = require('./routes/health');
 const authRouter = require('./routes/auth');
 const usersRouter = require('./routes/users');
+const materialsRouter = require('./routes/materials');
 const {
   requestIdMiddleware,
   requestLoggingMiddleware,
@@ -52,6 +53,7 @@ app.use(express.json());
 app.use('/api', healthRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
+app.use('/api/materials', materialsRouter);
 
 // Handle unknown endpoints
 app.use((req, res, next) => {
