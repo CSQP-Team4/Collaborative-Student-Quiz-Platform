@@ -5,6 +5,11 @@ const healthRouter = require('./routes/health');
 const authRouter = require('./routes/auth');
 const usersRouter = require('./routes/users');
 const materialsRouter = require('./routes/materials');
+const quizzesRouter = require('./routes/quizzes');
+const questionsRouter = require('./routes/questions');
+const analyticsRouter = require('./routes/analytics');
+const leaderboardRouter = require('./routes/leaderboard');
+const opsRouter = require('./routes/ops');
 const {
   requestIdMiddleware,
   requestLoggingMiddleware,
@@ -45,6 +50,8 @@ app.use((req, res, next) => {
 app.use(cors({
   origin: true,
   credentials: true,
+  // Lets the browser read the file name of report downloads (CSQP-30).
+  exposedHeaders: ['Content-Disposition'],
 }));
 app.use(cookieParser());
 app.use(express.json());
@@ -54,6 +61,11 @@ app.use('/api', healthRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/materials', materialsRouter);
+app.use('/api/analytics', analyticsRouter);
+app.use('/api/leaderboard', leaderboardRouter);
+app.use('/api/ops', opsRouter);
+app.use('/api', quizzesRouter);
+app.use('/api', questionsRouter);
 
 // Handle unknown endpoints
 app.use((req, res, next) => {

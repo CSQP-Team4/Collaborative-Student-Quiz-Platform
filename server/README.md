@@ -58,3 +58,25 @@ v7 loads part of itself with a dynamic `import()` that Jest only allows with
 this flag. Without it every database connection in Jest fails with
 "Missing required sub-document 'driver'". The "VM Modules is an experimental
 feature" warning is expected.
+
+## Uptime monitoring (CSQP-35 / CSQP-NF-002)
+
+Target: **99.5% availability per month**, excluding maintenance announced at least 24 hours ahead.
+
+```bash
+cd server
+npm run monitor        # separate terminal, keep it running next to the API
+```
+
+- The monitor runs as **its own process** so it still records downtime if the API crashes.
+- Every `UPTIME_INTERVAL_MS` (default 60 s) it calls `GET /api/health`. A check is healthy only if
+  the API answers 200 **and** reports MongoDB as connected. Each result is stored in the
+  `uptimechecks` collection (kept for about 13 months).
+- Admins see the report at **Admin dashboard → Uptime report** (`GET /api/ops/uptime`): current status,
+  availability per calendar month (UTC) against the target, downtime vs. the allowed budget
+  (0.5% of the month, e.g. 223.2 min in October) and incidents.
+- Planned maintenance is scheduled on the same page (`POST /api/ops/maintenance`). It must start at
+  least 24 hours after it is announced; checks inside such a window are not counted.
+
+In production, run the monitor on a different machine from the API (or add an external service such
+as UptimeRobot pointing at `/api/health`), so a machine failure is also caught.

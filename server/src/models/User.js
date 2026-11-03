@@ -42,12 +42,25 @@ const userSchema = new mongoose.Schema(
       type: Date,
       select: false,
     },
+    resetPasswordToken: {
+      type: String,
+      select: false,
+    },
+    resetPasswordExpires: {
+      type: Date,
+      select: false,
+    },
     failedLoginAttempts: {
       type: Number,
       default: 0,
     },
     lockUntil: {
       type: Date,
+    },
+    // CSQP-F-042: students appear on the leaderboard only if they opt in.
+    leaderboardOptIn: {
+      type: Boolean,
+      default: false,
     },
     refreshTokens: {
       type: [String],

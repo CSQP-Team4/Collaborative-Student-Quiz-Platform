@@ -11,4 +11,8 @@ router.post('/login', ipRateLimiter({ maxAttempts: 10 }), authController.login);
 router.post('/refresh', authController.refresh);
 router.post('/logout', authController.logout);
 
+// Password Reset endpoints (CSQP-31 / AC-CSQP-F-004)
+router.post('/forgot-password', ipRateLimiter({ maxAttempts: 5 }), authController.forgotPassword);
+router.post('/reset-password', ipRateLimiter({ maxAttempts: 5 }), authController.resetPassword);
+
 module.exports = router;

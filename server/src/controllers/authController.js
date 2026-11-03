@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const AuditLog = require('../models/AuditLog');
+const { sendVerificationEmail, sendPasswordResetEmail } = require('../utils/mailer');
 
 const BCRYPT_SALT_ROUNDS = 10;
 const VERIFICATION_CODE_EXPIRY_HOURS = 24;
@@ -168,6 +169,14 @@ exports.register = async (req, res) => {
       verificationExpires: expires,
     });
 
+    // Dispatch verification email with code and link via Gmail SMTP
+    await sendVerificationEmail({
+      to: newUser.email,
+      name: newUser.name,
+      code,
+      token,
+    });
+
     return res.status(201).json({
       success: true,
       statusCode: 201,
@@ -331,6 +340,14 @@ exports.resendVerification = async (req, res) => {
     user.verificationExpires = expires;
     await user.save();
 
+    // Dispatch fresh verification email with code and link via Gmail SMTP
+    await sendVerificationEmail({
+      to: user.email,
+      name: user.name,
+      code,
+      token,
+    });
+
     return res.status(200).json({
       success: true,
       statusCode: 200,
@@ -448,22 +465,42 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Reset failed login counter on success
-    user.failedLoginAttempts = 0;
-    user.lockUntil = undefined;
-
     // Generate tokens (CSQP-8: 15m access token, CSQP-9: 7d rotating refresh token)
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
 
     // Save refresh token to user's active session list
-    user.refreshTokens = user.refreshTokens || [];
-    user.refreshTokens.push(refreshToken);
-    // Keep max 5 active devices/refresh tokens
-    if (user.refreshTokens.length > 5) {
-      user.refreshTokens.shift();
+    // Fall back to atomic $push on concurrent VersionError
+    try {
+      user.refreshTokens = user.refreshTokens || [];
+      user.refreshTokens.push(refreshToken);
+      if (user.refreshTokens.length > 5) {
+        user.refreshTokens.shift();
+      }
+      user.failedLoginAttempts = 0;
+      user.lockUntil = undefined;
+      if (typeof user.save === 'function') {
+        await user.save();
+      }
+    } catch (saveErr) {
+      if (saveErr.name === 'VersionError') {
+        await User.updateOne(
+          { _id: user._id },
+          {
+            $set: { failedLoginAttempts: 0 },
+            $unset: { lockUntil: 1 },
+            $push: {
+              refreshTokens: {
+                $each: [refreshToken],
+                $slice: -5,
+              },
+            },
+          }
+        );
+      } else {
+        throw saveErr;
+      }
     }
-    await user.save();
 
     // Set HttpOnly cookie for refresh token (CSQP-SR-003)
     setRefreshTokenCookie(res, refreshToken);
@@ -622,6 +659,170 @@ exports.logout = async (req, res) => {
       statusCode: 500,
       error: 'SERVER_ERROR',
       message: error.message || 'Logout failed.',
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+/**
+ * POST /api/auth/forgot-password (CSQP-31 / AC-CSQP-F-004)
+ * Generates single-use 30-minute password reset token and dispatches email via Gmail SMTP
+ */
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email || typeof email !== 'string') {
+      return res.status(400).json({
+        success: false,
+        statusCode: 400,
+        error: 'VALIDATION_ERROR',
+        message: 'A valid email address is required.',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await User.findOne({ email: normalizedEmail });
+
+    // Enumeration prevention: always return generic success message
+    const genericSuccess = {
+      success: true,
+      statusCode: 200,
+      message: 'If an account exists with this email, a password reset link has been sent.',
+      timestamp: new Date().toISOString(),
+    };
+
+    if (!user) {
+      return res.status(200).json(genericSuccess);
+    }
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetExpires = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes per AC-CSQP-F-004
+
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = resetExpires;
+    await user.save();
+
+    // Dispatch reset email via Gmail SMTP
+    await sendPasswordResetEmail({
+      to: user.email,
+      name: user.name,
+      token: resetToken,
+    });
+
+    return res.status(200).json({
+      ...genericSuccess,
+      ...(process.env.NODE_ENV !== 'production' && {
+        _devResetToken: resetToken,
+      }),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      statusCode: 500,
+      error: 'SERVER_ERROR',
+      message: error.message || 'Password reset request failed.',
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+/**
+ * POST /api/auth/reset-password (CSQP-31 / AC-CSQP-F-004)
+ * Resets user password using single-use 30-minute token, invalidates old sessions & tokens
+ */
+exports.resetPassword = async (req, res) => {
+  try {
+    const { token, email, password } = req.body;
+
+    if (!token || !password) {
+      return res.status(400).json({
+        success: false,
+        statusCode: 400,
+        error: 'VALIDATION_ERROR',
+        message: 'Reset token and new password are required.',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    if (password.length < 8 || !/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+      return res.status(400).json({
+        success: false,
+        statusCode: 400,
+        error: 'WEAK_PASSWORD',
+        message: 'Password must be at least 8 characters and contain at least one letter and one number.',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const query = {
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: new Date() },
+    };
+
+    if (email) {
+      query.email = email.trim().toLowerCase();
+    }
+
+    const user = await User.findOne(query).select(
+      '+resetPasswordToken +resetPasswordExpires +password +refreshTokens'
+    );
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        statusCode: 400,
+        error: 'INVALID_OR_EXPIRED_RESET_TOKEN',
+        message: 'Password reset link is invalid or has expired. Please request a new one.',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const salt = await bcrypt.genSalt(BCRYPT_SALT_ROUNDS);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    user.password = hashedPassword;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    // Invalidate all existing sessions/refresh tokens across all devices
+    user.refreshTokens = [];
+    user.failedLoginAttempts = 0;
+    user.lockUntil = undefined;
+    user.isVerified = true;
+    await user.save();
+
+    // Security audit log entry
+    try {
+      await AuditLog.create({
+        user: user._id,
+        action: 'PASSWORD_RESET',
+        resource: 'User',
+        resourceId: user._id,
+        ipAddress: req.ip || req.connection?.remoteAddress || 'unknown',
+        details: {
+          email: user.email,
+          message: 'Password successfully reset via single-use token.',
+        },
+      });
+    } catch (auditErr) {
+      console.error('AuditLog creation error on password reset:', auditErr.message);
+    }
+
+    clearRefreshTokenCookie(res);
+
+    return res.status(200).json({
+      success: true,
+      statusCode: 200,
+      message: 'Password reset successful! You can now log in with your new password.',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      statusCode: 500,
+      error: 'SERVER_ERROR',
+      message: error.message || 'Password reset failed.',
       timestamp: new Date().toISOString(),
     });
   }

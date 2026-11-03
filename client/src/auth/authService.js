@@ -38,6 +38,14 @@ export const httpAuthService = {
   async logout() {
     await api.post('/auth/logout');
   },
+  async forgotPassword({ email }) {
+    const { data } = await api.post('/auth/forgot-password', { email });
+    return data;
+  },
+  async resetPassword({ token, email, password }) {
+    const { data } = await api.post('/auth/reset-password', { token, email, password });
+    return data;
+  },
 };
 
 // Set VITE_USE_MOCK_AUTH=true to try the UI before the backend auth exists.

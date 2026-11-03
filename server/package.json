@@ -5,9 +5,12 @@
   "main": "index.js",
   "scripts": {
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "benchmark": "node --experimental-vm-modules node_modules/jest/bin/jest.js src/_tests_/performance_benchmark.test.js",
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "seed": "node src/seed/run.js"
+    "seed": "node src/seed/run.js",
+    "seed:demo": "node src/seed/enrich_database.js",
+    "monitor": "node src/monitoring/run.js"
   },
   "keywords": [],
   "author": "",
@@ -17,11 +20,14 @@
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
+    "csv-parse": "^7.0.3",
     "dotenv": "^18.0.8",
     "express": "^5.3.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.11.2",
-    "multer": "^2.5.0"
+    "multer": "^2.5.0",
+    "nodemailer": "^10.2.1",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "jest": "^30.5.2",

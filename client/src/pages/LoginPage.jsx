@@ -109,6 +109,10 @@ export default function LoginPage() {
       </form>
 
       <p className="auth-switch">
+        <Link to="/forgot-password">Forgot your password?</Link>
+      </p>
+
+      <p className="auth-switch">
         New to CSQP? <Link to="/register">Create an account</Link>
       </p>
     </AuthLayout>
