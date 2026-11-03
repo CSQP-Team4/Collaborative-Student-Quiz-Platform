@@ -198,8 +198,11 @@ describe('CSQP-23 & CSQP-24: Quiz Anti-Cheat & Single Attempt (TC-Att-03, TC-Att
       const attemptId = firstRes.body.attempt.id;
 
       // Manually simulate time expiration (started 20 mins ago on a 15-min quiz)
+      const expiredAt = new Date(Date.now() - 20 * 60 * 1000);
+
       await QuizAttempt.findByIdAndUpdate(attemptId, {
-        startedAt: new Date(Date.now() - 20 * 60 * 1000),
+        startedAt: expiredAt,
+        expiresAt: expiredAt,
       });
 
       // Starting next attempt should auto-close old one and return 201

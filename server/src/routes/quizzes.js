@@ -1,8 +1,10 @@
+
 const express = require('express');
 const router = express.Router();
 const quizController = require('../controllers/quizController');
 const { authenticateToken, authorizeRoles } = require('../middleware/rbac');
 
+// CSQP-21: Start a quiz attempt.
 router.post(
   '/quizzes/:id/start',
   authenticateToken,
@@ -16,13 +18,13 @@ router.post(
   authenticateToken,
   authorizeRoles('instructor', 'admin'),
   quizController.createQuiz
-);  
+);
 
 // Public / student browse routes
 router.get('/quizzes', quizController.listPublishedQuizzes);
 router.get('/quizzes/:id', quizController.getQuizById);
 
-// Attempt lifecycle & anti-cheat routes (CSQP-F-032 & CSQP-F-033)
+// Attempt lifecycle & anti-cheat routes
 router.post(
   '/quizzes/:id/attempts',
   authenticateToken,
@@ -36,11 +38,14 @@ router.post(
   quizController.recordAntiCheatEvent
 );
 
+// Existing submission endpoint
 router.post(
   '/attempts/:id/submit',
   authenticateToken,
   quizController.submitQuizAttempt
 );
+
+// CSQP-22: Submit and auto-grade a quiz attempt.
 router.post(
   '/quizzes/:id/submit',
   authenticateToken,
