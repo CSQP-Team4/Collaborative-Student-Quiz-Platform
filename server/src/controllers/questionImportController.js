@@ -332,4 +332,3 @@ module.exports = {
   readUploadedRows,
   validateRow,
 };
-

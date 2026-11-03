@@ -492,20 +492,77 @@ exports.recordAntiCheatEvent = async (req, res) => {
  * POST /api/attempts/:id/submit
  * Submits student answers, auto-grades objective questions, and closes attempt session
  */
-exports.submitQuizAttempt = async (req, res) => {
-  try {
-    const { id: attemptId } = req.params;
-    const studentId = req.user.id;
-    const { responses = [] } = req.body;
 
-    const attempt = await QuizAttempt.findOne({ _id: attemptId, student: studentId }).populate('quiz');
-    if (!attempt) {
-      return res.status(404).json({
+exports.submitQuizAttempt = async (req, res) => {
+  const timestamp = () => new Date().toISOString();
+
+  try {
+    const isNewEndpoint = req.route?.path === '/quizzes/:id/submit';
+    const quizId = isNewEndpoint ? req.params.id : null;
+    const attemptId = isNewEndpoint ? req.body.attemptId : req.params.id;
+    const studentId = req.user.id;
+    const { responses } = req.body || {};
+
+    // Validate request payload.
+    if (
+      !Array.isArray(responses) ||
+      responses.some(
+        (r) =>
+          !r ||
+          typeof r !== 'object' ||
+          Array.isArray(r) ||
+          !(r.question?._id || r.question) ||
+          typeof (r.answer ?? r.selectedOption) !== 'string'
+      )
+    ) {
+      return res.status(400).json({
         success: false,
-        statusCode: 404,
-        error: 'ATTEMPT_NOT_FOUND',
-        message: 'Quiz attempt not found.',
-        timestamp: new Date().toISOString(),
+        statusCode: 400,
+        error: 'INVALID_RESPONSES',
+        message: 'Responses must be an array of valid question and answer objects.',
+        timestamp: timestamp(),
+      });
+    }
+
+    if (
+      !mongoose.Types.ObjectId.isValid(attemptId) ||
+      (quizId && !mongoose.Types.ObjectId.isValid(quizId))
+    ) {
+      return res.status(400).json({
+        success: false,
+        statusCode: 400,
+        error: 'INVALID_ID',
+        message: 'Invalid attempt or quiz identifier.',
+        timestamp: timestamp(),
+      });
+    }
+
+    const attempt = await QuizAttempt.findOne({
+      _id: attemptId,
+      student: studentId,
+    });
+
+    // Do not disclose another student's attempt.
+    if (!attempt) {
+      return res.status(403).json({
+        success: false,
+        statusCode: 403,
+        error: 'INVALID_ATTEMPT_SESSION',
+        message: 'The attempt session is invalid or does not belong to you.',
+        timestamp: timestamp(),
+      });
+    }
+
+    if (
+      quizId &&
+      attempt.quiz.toString() !== quizId
+    ) {
+      return res.status(403).json({
+        success: false,
+        statusCode: 403,
+        error: 'INVALID_ATTEMPT_SESSION',
+        message: 'The attempt does not belong to this quiz.',
+        timestamp: timestamp(),
       });
     }
 
@@ -515,37 +572,105 @@ exports.submitQuizAttempt = async (req, res) => {
         statusCode: 400,
         error: 'ATTEMPT_ALREADY_CLOSED',
         message: `This attempt has already been ${attempt.status}.`,
-        timestamp: new Date().toISOString(),
+        timestamp: timestamp(),
       });
     }
 
-    // Auto-grading: fetch actual answers from Question database with select('+answer')
-    const questionIds = attempt.shuffledQuestions.map((sq) => sq.question);
-    const questionsWithAnswers = await Question.find({ _id: { $in: questionIds } }).select('+answer');
+    const questionIds = attempt.shuffledQuestions.map(
+      (sq) => sq.question.toString()
+    );
+    const questionTypes = new Map(
+      attempt.shuffledQuestions.map((sq) => [
+        sq.question.toString(),
+        sq.type,
+      ])
+    );
 
-    const answerMap = new Map();
-    for (const q of questionsWithAnswers) {
-      answerMap.set(q._id.toString(), q.answer);
+    // Reject answers for questions outside this attempt.
+    const seen = new Set();
+
+    for (const response of responses) {
+      const questionId = (
+        response.question?._id || response.question
+      ).toString();
+
+      if (
+        !mongoose.Types.ObjectId.isValid(questionId) ||
+        !questionIds.includes(questionId) ||
+        seen.has(questionId)
+      ) {
+        return res.status(400).json({
+          success: false,
+          statusCode: 400,
+          error: 'INVALID_RESPONSES',
+          message: 'Responses contain an invalid, duplicate, or unrelated question.',
+          timestamp: timestamp(),
+        });
+      }
+
+      seen.add(questionId);
     }
 
+    // Fetch answer keys only on the server.
+    const questions = await Question.find({
+      _id: { $in: questionIds },
+    }).select('+answer type');
+
+    const answerMap = new Map(
+      questions.map((q) => [
+        q._id.toString(),
+        { answer: q.answer, type: q.type },
+      ])
+    );
+
     let calculatedScore = 0;
-    const formattedResponses = [];
+    let objectiveCount = 0;
+    let pendingReviewCount = 0;
 
-    for (const resp of responses) {
-      const qIdStr = (resp.question?._id || resp.question || '').toString();
-      const submittedAnswer = (resp.answer || resp.selectedOption || '').toString().trim();
-      const correctAnswer = (answerMap.get(qIdStr) || '').toString().trim();
+    const formattedResponses = responses.map((response) => {
+      const questionId = (
+        response.question?._id || response.question
+      ).toString();
 
-      if (submittedAnswer && correctAnswer && submittedAnswer.toLowerCase() === correctAnswer.toLowerCase()) {
+      const answer =
+        response.answer ?? response.selectedOption;
+
+      const questionType =
+        questionTypes.get(questionId) ||
+        answerMap.get(questionId)?.type;
+
+      const correctAnswer = answerMap.get(questionId)?.answer;
+
+      if (questionType === 'SUBJECTIVE') {
+        pendingReviewCount += 1;
+
+        return {
+          question: questionId,
+          answer: answer.trim(),
+          gradingStatus: 'Pending Review',
+        };
+      }
+
+      objectiveCount += 1;
+
+      const normalize = (value) =>
+        String(value).trim().toLowerCase();
+
+      if (
+        correctAnswer !== undefined &&
+        normalize(answer) === normalize(correctAnswer)
+      ) {
         calculatedScore += 1;
       }
 
-      formattedResponses.push({
-        question: resp.question,
-        answer: submittedAnswer,
-      });
-    }
+      return {
+        question: questionId,
+        answer: answer.trim(),
+        gradingStatus: 'Graded',
+      };
+    });
 
+    // Commit the final score and close the attempt.
     attempt.responses = formattedResponses;
     attempt.score = calculatedScore;
     const durationMs = attempt.quiz.duration * 60 * 1000;
@@ -557,29 +682,37 @@ exports.submitQuizAttempt = async (req, res) => {
       ? 'timed_out'
       : 'submitted';
     attempt.submittedAt = new Date();
+
     await attempt.save();
 
     const totalQuestions = attempt.shuffledQuestions.length;
-    const percentage = totalQuestions > 0 ? Math.round((calculatedScore / totalQuestions) * 100) : 0;
+    const percentage =
+      totalQuestions > 0
+        ? Math.round((calculatedScore / totalQuestions) * 100)
+        : 0;
 
     return res.status(200).json({
       success: true,
       statusCode: 200,
       message: 'Quiz submitted successfully!',
-      score: attempt.score,
+      score: calculatedScore,
       totalQuestions,
       percentage,
+      objectiveCount,
+      pendingReviewCount,
       isFlaggedForReview: attempt.isFlaggedForReview,
       result: {
         attemptId: attempt._id,
         status: attempt.status,
-        score: attempt.score,
+        score: calculatedScore,
         totalQuestions,
         percentage,
+        objectiveCount,
+        pendingReviewCount,
         submittedAt: attempt.submittedAt,
         flaggedForReview: attempt.isFlaggedForReview,
       },
-      timestamp: new Date().toISOString(),
+      timestamp: timestamp(),
     });
   } catch (error) {
     return res.status(500).json({
@@ -587,7 +720,7 @@ exports.submitQuizAttempt = async (req, res) => {
       statusCode: 500,
       error: 'SERVER_ERROR',
       message: error.message || 'Failed to submit quiz attempt.',
-      timestamp: new Date().toISOString(),
+      timestamp: timestamp(),
     });
   }
 };

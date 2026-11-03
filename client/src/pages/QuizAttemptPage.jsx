@@ -136,7 +136,7 @@ export default function QuizAttemptPage() {
         })
       );
 
-      const res = await quizService.submitAttempt(attempt.id, responses);
+      const res = await quizService.submitAttempt(quizId, attempt.id, responses);
       setSubmissionResult(res);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to submit quiz.');
