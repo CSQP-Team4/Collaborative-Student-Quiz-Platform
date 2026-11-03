@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Question = require('../models/Question');
 
 const TYPES = ['MCQ', 'TRUE_FALSE', 'SUBJECTIVE'];
@@ -70,4 +71,71 @@ async function createQuestion(req, res) {
   });
 }
 
-module.exports = { createQuestion };
+// CSQP-F-023: the moderation queue lists questions waiting for review.
+async function listPendingQuestions(req, res) {
+  try {
+    const questions = await Question.find({ status: 'pending' })
+      .select('+answer')
+      .populate('createdBy', 'name email')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      count: questions.length,
+      questions: questions.map((q) => ({
+        id: q._id.toString(),
+        type: q.type,
+        text: q.text,
+        options: q.options || [],
+        answer: q.answer,
+        subject: q.subject,
+        topic: q.topic,
+        difficulty: q.difficulty,
+        status: q.status,
+        createdBy: q.createdBy
+          ? { id: q.createdBy._id.toString(), name: q.createdBy.name, email: q.createdBy.email }
+          : null,
+        createdAt: q.createdAt,
+      })),
+    });
+  } catch (error) {
+    return sendError(res, 500, 'SERVER_ERROR', 'Unable to fetch the approval queue.');
+  }
+}
+
+// CSQP-F-023: approve or reject a question.
+async function updateQuestionStatus(req, res) {
+  const { id } = req.params;
+  const status = clean(req.body && req.body.status).toLowerCase();
+
+  if (!mongoose.isValidObjectId(id)) {
+    return sendError(res, 400, 'VALIDATION_ERROR', 'Invalid question id.');
+  }
+  if (!['approved', 'rejected'].includes(status)) {
+    return sendError(res, 400, 'VALIDATION_ERROR', 'status must be "approved" or "rejected".');
+  }
+
+  try {
+    // findByIdAndUpdate skips document validation; the answer field is hidden by default.
+    const question = await Question.findByIdAndUpdate(
+      id,
+      { status, reviewedBy: req.user.id },
+      { returnDocument: 'after' }
+    );
+
+    if (!question) {
+      return sendError(res, 404, 'NOT_FOUND', 'Question not found.');
+    }
+
+    return res.status(200).json({
+      success: true,
+      id: question._id.toString(),
+      status: question.status,
+    });
+  } catch (error) {
+    return sendError(res, 500, 'SERVER_ERROR', 'Unable to update the question status.');
+  }
+}
+
+module.exports = { createQuestion, listPendingQuestions, updateQuestionStatus };

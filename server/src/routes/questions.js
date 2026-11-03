@@ -54,4 +54,17 @@ router.get(
   questionImportController.listQuestions
 );
 
+// CSQP-F-023: instructor approval queue.
+router.get(
+  '/questions/pending',
+  ...questionManager,
+  questionController.listPendingQuestions
+);
+
+router.patch(
+  '/questions/:id/status',
+  ...questionManager,
+  questionController.updateQuestionStatus
+);
+
 module.exports = router;
