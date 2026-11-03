@@ -1,52 +1,63 @@
-/* Base styles and colour tokens. Contrast ratios meet WCAG 2.1 AA (CSQP-NF-004). */
+/* Base styles and colour tokens: minimalist dark theme (frontend redesign).
+   Every text colour below meets WCAG 2.1 AA (>= 4.5:1) on all four
+   background levels (CSQP-NF-004, see docs/ACCESSIBILITY_AUDIT.md).
+
+   Background      #0e0e0e   page
+   Surface         #161616   panels, sidebar, cards
+   Surface-raised  #1c1c1c   inputs, table headers, hovered items
+   Surface-hover   #222222
+   Border          #2a2a2a   1px hairlines
+   Text            #e8e8e8
+   Text-secondary  #a3a3a3   >= 6.3:1
+   Text-muted      #959595   >= 5.3:1
+   Accent          #60a5fa   links and active states, >= 6.2:1
+   Accent-strong   #2563eb   filled buttons with white text, 5.2:1
+*/
+
 :root {
-  --text: #3d4150;
-  --text-h: #11131a;
-  --muted: #5d6273;
-  --bg: #f5f6f8;
-  --surface: #ffffff;
-  --border: #d9dce3;
-  --accent: #3446c8;
-  --accent-hover: #2735a3;
-  --accent-text: #ffffff;
-  --accent-soft: #e8ebfb;
-  --danger: #b42318;
-  --danger-soft: #fdecea;
-  --success: #116b3c;
-  --success-soft: #e6f4ec;
-  --focus: #3446c8;
-  --code-bg: #eef0f4;
-  --radius: 10px;
+  --bg: #0e0e0e;
+  --surface: #161616;
+  --surface-raised: #1c1c1c;
+  --surface-hover: #222222;
+  --border: #2a2a2a;
+  --border-subtle: #202020;
+  --border-strong: #3f3f3f;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  --text: #e8e8e8;
+  --text-h: #ffffff;
+  --text-secondary: #a3a3a3;
+  --text-muted: #959595;
+  --muted: var(--text-secondary); /* used by the page styles in App.css */
 
-  font: 16px/1.5 var(--sans);
-  color-scheme: light dark;
+  --accent: #60a5fa;
+  --accent-hover: #93c5fd;
+  --accent-text: #0b1220; /* text on an --accent background, 7.4:1 */
+  --accent-soft: #1a2331;
+  --accent-strong: #2563eb;
+  --accent-strong-hover: #1d4ed8;
+
+  --danger: #f87171;
+  --danger-soft: #301c1c;
+  --success: #4ade80;
+  --success-soft: #172b1f;
+  --warning: #facc15;
+  --warning-soft: #2f2914;
+
+  --focus: #60a5fa;
+  --code-bg: #1c1c1c;
+  --radius: 6px;
+  --radius-sm: 4px;
+  --radius-lg: 8px;
+
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Inter, system-ui, sans-serif;
+  --mono: ui-monospace, 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+
+  font: 14px/1.5 var(--sans);
+  color-scheme: dark;
   color: var(--text);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #c9ccd6;
-    --text-h: #f3f4f7;
-    --muted: #a3a8b8;
-    --bg: #14161c;
-    --surface: #1d2028;
-    --border: #353946;
-    --accent: #8c9cff;
-    --accent-hover: #a9b5ff;
-    --accent-text: #10121a;
-    --accent-soft: #262c4a;
-    --danger: #ff8a80;
-    --danger-soft: #3a1f1f;
-    --success: #7ad9a4;
-    --success-soft: #1b3326;
-    --focus: #a9b5ff;
-    --code-bg: #262a35;
-  }
+  -moz-osx-font-smoothing: grayscale;
 }
 
 *,
@@ -55,40 +66,87 @@
   box-sizing: border-box;
 }
 
+html,
 body {
   margin: 0;
+  padding: 0;
   min-height: 100vh;
+  background-color: var(--bg);
+  color: var(--text);
 }
 
 h1,
-h2 {
+h2,
+h3,
+h4,
+h5,
+h6 {
   color: var(--text-h);
-  line-height: 1.2;
+  font-weight: 550;
+  margin: 0;
+  letter-spacing: -0.015em;
+}
+
+h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+h2 {
+  font-size: 1.2rem;
+  line-height: 1.3;
+}
+
+h3 {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+p {
+  margin: 0 0 12px;
+  color: var(--text-secondary);
 }
 
 a {
   color: var(--accent);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+a:hover {
+  text-decoration: underline;
+  color: var(--accent-hover);
+}
+
+/* Links inside running text stay underlined, so they are not told apart by colour alone (WCAG 1.4.1). */
+p a,
+li a {
+  text-decoration: underline;
 }
 
 code,
 pre {
   font-family: var(--mono);
   background: var(--code-bg);
-  border-radius: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
 }
 
 code {
-  padding: 1px 5px;
-  font-size: 0.9em;
+  padding: 2px 5px;
+  font-size: 0.85em;
+  color: #93c5fd;
 }
 
 pre {
   padding: 12px;
   overflow-x: auto;
+  font-size: 0.85rem;
 }
 
-/* Visible keyboard focus everywhere (Tab navigation, CSQP-12). */
+/* Visible keyboard focus everywhere (CSQP-12 / CSQP-33). */
 :focus-visible {
-  outline: 3px solid var(--focus);
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
 }

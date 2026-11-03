@@ -34,7 +34,8 @@ describe('Leaderboard page (CSQP-29)', () => {
     leaderboardService.getLeaderboard.mockResolvedValue(board());
     renderApp('/student', loggedInAs(studentUser));
 
-    await user.click(await screen.findByRole('link', { name: 'Leaderboard' }));
+    // The page is in the sidebar and on a dashboard card; use the card.
+    await user.click(within(await screen.findByRole('main')).getByRole('link', { name: 'Leaderboard' }));
     const rows = within(await screen.findByRole('table')).getAllByRole('row');
     expect(rows).toHaveLength(4);
     expect(rows[1]).toHaveTextContent('1Priya Sharma100%');

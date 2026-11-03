@@ -18,6 +18,7 @@ import ClassAnalyticsPage from './pages/ClassAnalyticsPage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import ProfileSettingsPage from './pages/ProfileSettingsPage';
 import UptimeReportPage from './pages/UptimeReportPage';
+import QuizzesListPage from './pages/QuizzesListPage';
 import './App.css';
 
 // "/" sends logged-in users to their role's dashboard, everyone else to login.
@@ -57,6 +58,14 @@ export default function App() {
         element={
           <ProtectedRoute allowedRoles={[ROLES.STUDENT]}>
             <StudentProgressPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/quizzes"
+        element={
+          <ProtectedRoute allowedRoles={[ROLES.STUDENT, ROLES.ADMIN]}>
+            <QuizzesListPage />
           </ProtectedRoute>
         }
       />

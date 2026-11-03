@@ -1,7 +1,7 @@
 # Accessibility Audit — WCAG 2.1 AA (CSQP-33 / CSQP-NF-004)
 
 **Story:** CSQP-33 · **Requirement:** CSQP-NF-004 · **Test case:** TC-UX-01
-**Owner:** Harshith R Reddy · **Date:** 30 Oct 2026 · **Build:** `main` after PR #19 + this PR
+**Owner:** Harshith R Reddy · **Date:** 30 Oct 2026, re-audited 3 Nov 2026 after the frontend redesign (section 10)
 
 ## 1. Result
 
@@ -9,7 +9,7 @@
 | --- | --- |
 | Web UI responsive on desktop and mobile viewports | **Pass**: no horizontal scrolling at 1280 × 900 or 390 × 844, on every screen |
 | Core flows (login, attempt quiz, view dashboard) keyboard-navigable | **Pass**: full keyboard-only walkthrough (section 5) |
-| Sufficient contrast | **Pass**: every text/background pair is at least 5.4:1 (AA needs 4.5:1), light and dark mode |
+| Sufficient contrast | **Pass**: every text/background pair is at least 5.2:1 (AA needs 4.5:1) in the dark theme (section 10) |
 | Chrome Lighthouse accessibility audit passes on core flows | **Pass**: **100 / 100** on all 9 core pages, desktop and mobile |
 
 ## 2. Lighthouse accessibility scores (after fixes)
@@ -98,3 +98,34 @@ would catch the same problems coming back.
 - **Lighthouse:** open a page in Chrome → DevTools → *Lighthouse* → tick *Accessibility* →
   *Analyze page load* (once for *Desktop*, once for *Mobile*).
 - **Automated tests:** `cd client && npm test`
+
+## 10. Re-audit after the frontend redesign (3 Nov 2026)
+
+The team lead's redesign (dark theme, top bar, sidebar navigation, card dashboard, new Quizzes
+page) was merged into the existing pages and audited again.
+
+**As delivered, the redesign failed WCAG 2.1 AA** (about 70 colour-contrast failures):
+
+| Colour | Delivered | Contrast | Used now | Contrast |
+| --- | --- | --- | --- | --- |
+| Muted text | `#6b6b6b` | 3.0–3.6:1 (fail) | `#959595` | 5.3–6.4:1 |
+| Secondary text | `#8a8a8a` | 4.6–5.6:1 | `#a3a3a3` | 6.3–7.7:1 |
+| Links / active items | `#3b82f6` | 4.3–5.3:1 (fails on hover rows) | `#60a5fa` | 6.3–7.6:1 |
+| Filled buttons (white text) | `#3b82f6` | 3.7:1 (fail) | `#2563eb` | 5.2:1 |
+
+Ranges are across the four background levels (`#0e0e0e`, `#161616`, `#1c1c1c`, `#222222`).
+Other changes: sidebar links read their plain names (not "… (sidebar)"), each dashboard card is
+one link and one Tab stop, links in running text stay underlined (WCAG 1.4.1), and the skip link
+and screen-reader-only text from section 4 were kept.
+
+**Results after the fixes**
+
+| Check | Result |
+| --- | --- |
+| Lighthouse accessibility | 100 / 100 on 10 core pages (the 9 above plus `/quizzes`), desktop and mobile |
+| axe-core WCAG 2.1 A/AA in a real browser | 0 violations on 11 screens × desktop and mobile (incl. login error state) |
+| Horizontal scrolling at 390 px | None (the sidebar turns into a wrapping row on phones) |
+| Automated tests | Quizzes page added to the axe test list (14 screens); 98 client tests pass |
+
+The theme is now dark only, so the light-mode figures in section 6 no longer apply; the table
+above replaces them.

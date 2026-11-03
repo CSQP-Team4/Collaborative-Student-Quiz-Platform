@@ -13,6 +13,7 @@ const TILES = [
   {
     title: 'Quizzes',
     description: 'Take timed quizzes and get instant scores.',
+    to: '/quizzes',
   },
   {
     title: 'My progress',

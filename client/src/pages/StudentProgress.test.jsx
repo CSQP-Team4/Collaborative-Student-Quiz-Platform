@@ -46,7 +46,8 @@ describe('Student progress page (CSQP-27)', () => {
     analyticsService.getMyPerformance.mockResolvedValue(SUMMARY);
     renderApp('/student', loggedInStudent());
 
-    await user.click(await screen.findByRole('link', { name: 'My progress' }));
+    // The page is in the sidebar and on a dashboard card; use the card.
+    await user.click(within(await screen.findByRole('main')).getByRole('link', { name: 'My progress' }));
     expect(await screen.findByRole('heading', { name: 'My progress', level: 1 })).toBeInTheDocument();
   });
 

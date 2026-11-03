@@ -40,7 +40,8 @@ describe('Class analytics page (CSQP-28)', () => {
     analyticsService.getClassAnalytics.mockResolvedValue(SUMMARY);
     renderApp('/instructor', loggedInAs(instructorUser));
 
-    await user.click(await screen.findByRole('link', { name: 'Class analytics' }));
+    // The page is in the sidebar and on a dashboard card; use the card.
+    await user.click(within(await screen.findByRole('main')).getByRole('link', { name: 'Class analytics' }));
     expect(await screen.findByRole('heading', { name: 'Class analytics', level: 1 })).toBeInTheDocument();
   });
 
