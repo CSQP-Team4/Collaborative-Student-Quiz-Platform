@@ -24,6 +24,57 @@ const discardUpload = (file) =>
 // GET /api/materials - View and search study materials
 router.get('/', authenticateToken, async (req, res, next) => {
   try {
+    const totalMaterials = await Material.countDocuments();
+    if (totalMaterials === 0) {
+      const User = require('../models/User');
+      const uploader = (await User.findOne({ role: 'instructor' })) || (await User.findOne());
+      if (uploader) {
+        const samples = [
+          {
+            title: 'Operating Systems Process Synchronization & Semaphores',
+            subject: 'Operating Systems',
+            tags: ['semaphores', 'concurrency', 'deadlock', 'mutex'],
+            fileUrl: '/api/materials/files/sample-os-notes.pdf',
+            uploadedBy: uploader._id,
+            versions: [{ version: 1, fileUrl: '/api/materials/files/sample-os-notes.pdf', uploadedBy: uploader._id }],
+          },
+          {
+            title: 'Database Management Systems: SQL Queries & Normalization',
+            subject: 'Database Management Systems',
+            tags: ['sql', 'normalization', 'transactions', 'acid'],
+            fileUrl: '/api/materials/files/sample-dbms-notes.pdf',
+            uploadedBy: uploader._id,
+            versions: [{ version: 1, fileUrl: '/api/materials/files/sample-dbms-notes.pdf', uploadedBy: uploader._id }],
+          },
+          {
+            title: 'Computer Networks: TCP/IP & Socket Programming Guide',
+            subject: 'Computer Networks',
+            tags: ['tcp-ip', 'osi-model', 'sockets', 'routing'],
+            fileUrl: '/api/materials/files/sample-cn-notes.pdf',
+            uploadedBy: uploader._id,
+            versions: [{ version: 1, fileUrl: '/api/materials/files/sample-cn-notes.pdf', uploadedBy: uploader._id }],
+          },
+          {
+            title: 'Data Structures: Trees, Graphs & Dynamic Programming Cheat Sheet',
+            subject: 'Data Structures',
+            tags: ['trees', 'graphs', 'algorithms', 'dp'],
+            fileUrl: '/api/materials/files/sample-dsa-notes.pdf',
+            uploadedBy: uploader._id,
+            versions: [{ version: 1, fileUrl: '/api/materials/files/sample-dsa-notes.pdf', uploadedBy: uploader._id }],
+          },
+          {
+            title: 'Software Engineering: Agile Sprints, CI/CD & Design Patterns',
+            subject: 'Software Engineering',
+            tags: ['agile', 'scrum', 'design-patterns', 'testing'],
+            fileUrl: '/api/materials/files/sample-se-notes.pdf',
+            uploadedBy: uploader._id,
+            versions: [{ version: 1, fileUrl: '/api/materials/files/sample-se-notes.pdf', uploadedBy: uploader._id }],
+          },
+        ];
+        await Material.insertMany(samples);
+      }
+    }
+
     const { search, subject } = req.query;
     const filter = {};
 

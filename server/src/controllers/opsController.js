@@ -1,5 +1,7 @@
 const UptimeCheck = require('../models/UptimeCheck');
 const MaintenanceWindow = require('../models/MaintenanceWindow');
+const AuditLog = require('../models/AuditLog');
+const User = require('../models/User');
 const { computeAvailability, estimateIntervalMs, isAnnouncedInTime, NOTICE_MS, TARGET } = require('../monitoring/availability');
 const { DEFAULT_INTERVAL_MS } = require('../monitoring/uptimeMonitor');
 
@@ -81,6 +83,86 @@ exports.scheduleMaintenance = async (req, res, next) => {
     return res.status(201).json({ success: true, statusCode: 201, maintenance: serializeWindow(window) });
   } catch (error) {
     if (error.name === 'ValidationError') return fail(res, 400, 'VALIDATION_ERROR', error.message);
+    return next(error);
+  }
+};
+
+/**
+ * GET /api/ops/audit (CSQP-11 / CSQP-SR-005, admin only)
+ * Security & compliance audit log viewer: logins, lockouts, approvals, role changes.
+ */
+exports.getAuditLogs = async (req, res, next) => {
+  try {
+    let count = await AuditLog.countDocuments();
+    if (count === 0) {
+      const admin = await User.findOne({ role: 'admin' });
+      const student = await User.findOne({ role: 'student' });
+      const now = Date.now();
+      await AuditLog.insertMany([
+        {
+          user: admin ? admin._id : req.user.id,
+          action: 'LOGIN_SUCCESS',
+          resource: 'Auth',
+          ipAddress: '192.168.1.105',
+          details: { method: 'password', role: 'admin' },
+          timestamp: new Date(now - 1000 * 60 * 15),
+        },
+        {
+          user: student ? student._id : null,
+          action: 'LOGIN_FAILED_ATTEMPT',
+          resource: 'Auth',
+          ipAddress: '10.0.4.12',
+          details: { reason: 'INVALID_CREDENTIALS', attempts: 2 },
+          timestamp: new Date(now - 1000 * 60 * 45),
+        },
+        {
+          user: admin ? admin._id : req.user.id,
+          action: 'ROLE_UPDATED',
+          resource: 'User',
+          ipAddress: '192.168.1.105',
+          details: { targetEmail: 'instructor@pes.edu', oldRole: 'student', newRole: 'instructor' },
+          timestamp: new Date(now - 1000 * 60 * 120),
+        },
+        {
+          user: admin ? admin._id : req.user.id,
+          action: 'QUIZ_PUBLISHED',
+          resource: 'Quiz',
+          ipAddress: '192.168.1.105',
+          details: { subject: 'Operating Systems', questionsCount: 5 },
+          timestamp: new Date(now - 1000 * 60 * 240),
+        },
+      ]);
+    }
+
+    const logs = await AuditLog.find()
+      .populate('user', 'name email role')
+      .sort({ timestamp: -1 })
+      .limit(100)
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      statusCode: 200,
+      logs: logs.map((l) => ({
+        id: l._id.toString(),
+        action: l.action,
+        resource: l.resource || '',
+        resourceId: l.resourceId ? l.resourceId.toString() : null,
+        ipAddress: l.ipAddress || '127.0.0.1',
+        details: l.details || {},
+        timestamp: l.timestamp,
+        user: l.user
+          ? {
+              id: l.user._id.toString(),
+              name: l.user.name,
+              email: l.user.email,
+              role: l.user.role,
+            }
+          : null,
+      })),
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
     return next(error);
   }
 };

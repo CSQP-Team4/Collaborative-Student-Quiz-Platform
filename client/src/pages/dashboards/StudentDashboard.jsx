@@ -5,6 +5,7 @@ const TILES = [
   {
     title: 'Study materials',
     description: 'Upload, search and download notes shared by classmates.',
+    to: '/materials',
   },
   {
     title: 'Contribute questions',

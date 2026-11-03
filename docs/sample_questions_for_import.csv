@@ -1,0 +1,9 @@
+type,text,options,answer,subject,topic,difficulty
+MCQ,"Which algorithm is non-preemptive by default in CPU scheduling?","FCFS | Round Robin | SRTF | Priority (Preemptive)",FCFS,Operating Systems,CPU Scheduling,easy
+MCQ,"What is the main function of the Translation Lookaside Buffer (TLB)?","Cache page table entries | Store file descriptors | Manage disk blocks | Schedule threads",Cache page table entries,Operating Systems,Memory Management,medium
+TRUE_FALSE,"Deadlock can occur only if mutual exclusion condition holds true.","True | False",True,Operating Systems,Deadlock,easy
+MCQ,"Which of the following is a symptom of Thrashing in operating systems?","High CPU utilization | High page fault rate and low CPU utilization | Zero page faults | Excessive disk idle time",High page fault rate and low CPU utilization,Operating Systems,Virtual Memory,medium
+MCQ,"What is the maximum number of IP addresses in a standard IPv4 Class C network?","128 | 256 | 512 | 1024",256,Computer Networks,IPv4 Addressing,easy
+TRUE_FALSE,"TCP is a connection-oriented and reliable transport protocol.","True | False",True,Computer Networks,Transport Layer,easy
+MCQ,"Which normal form eliminates partial dependency on a composite key?","1NF | 2NF | 3NF | BCNF",2NF,Database Management Systems,Normalization,easy
+MCQ,"In ACID properties of databases, what does the 'I' stand for?","Integrity | Isolation | Iteration | Indexing",Isolation,Database Management Systems,Transactions,easy

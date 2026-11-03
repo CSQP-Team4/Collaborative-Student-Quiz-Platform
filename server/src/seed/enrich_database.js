@@ -9,10 +9,14 @@
 require('dotenv').config();
 
 const mongoose = require('mongoose');
+const path = require('path');
+const fs = require('fs');
 const User = require('../models/User');
 const Question = require('../models/Question');
 const Quiz = require('../models/Quiz');
 const QuizAttempt = require('../models/QuizAttempt');
+const Material = require('../models/Material');
+const { UPLOAD_DIR } = require('../middleware/upload');
 
 const EXTRA_QUIZZES = [
   { title: 'Operating Systems Fundamentals', subject: 'Operating Systems', duration: 15, description: 'Processes, memory management, scheduling and file systems.' },
@@ -27,6 +31,59 @@ async function enrichDatabase({ log = console.log } = {}) {
   const students = await User.find({ role: 'student' }).sort({ createdAt: 1 });
 
   const created = { quizzes: 0, attempts: 0 };
+
+  const SAMPLE_MATERIALS = [
+    {
+      title: 'Operating Systems Process Synchronization & Semaphores',
+      subject: 'Operating Systems',
+      tags: ['semaphores', 'concurrency', 'deadlock', 'mutex'],
+      filename: 'sample-os-notes.pdf',
+    },
+    {
+      title: 'Database Management Systems: SQL Queries & Normalization',
+      subject: 'Database Management Systems',
+      tags: ['sql', 'normalization', 'transactions', 'acid'],
+      filename: 'sample-dbms-notes.pdf',
+    },
+    {
+      title: 'Computer Networks: TCP/IP & Socket Programming Guide',
+      subject: 'Computer Networks',
+      tags: ['tcp-ip', 'osi-model', 'sockets', 'routing'],
+      filename: 'sample-cn-notes.pdf',
+    },
+    {
+      title: 'Data Structures: Trees, Graphs & Dynamic Programming Cheat Sheet',
+      subject: 'Data Structures',
+      tags: ['trees', 'graphs', 'algorithms', 'dp'],
+      filename: 'sample-dsa-notes.pdf',
+    },
+    {
+      title: 'Software Engineering: Agile Sprints, CI/CD & Design Patterns',
+      subject: 'Software Engineering',
+      tags: ['agile', 'scrum', 'design-patterns', 'testing'],
+      filename: 'sample-se-notes.pdf',
+    },
+  ];
+
+  for (const m of SAMPLE_MATERIALS) {
+    if (await Material.exists({ title: m.title })) continue;
+    const fileUrl = `/api/materials/files/${m.filename}`;
+    const filePath = path.join(UPLOAD_DIR, m.filename);
+    if (!fs.existsSync(filePath)) {
+      const minimalPdf = `%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>\nendobj\n4 0 obj\n<< /Length 80 >>\nstream\nBT\n/F1 16 Tf\n50 720 Td\n(CSQP Revision Material - ${m.title}) Tj\nET\nendstream\nendobj\n5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\nxref\n0 6\n0000000000 65535 f \n0000000009 00000 n \n0000000058 00000 n \n0000000115 00000 n \n0000000244 00000 n \n0000000375 00000 n \ntrailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n450\n%%EOF\n`;
+      fs.writeFileSync(filePath, minimalPdf);
+    }
+
+    await Material.create({
+      title: m.title,
+      subject: m.subject,
+      tags: m.tags,
+      fileUrl,
+      uploadedBy: instructor._id,
+      versions: [{ version: 1, fileUrl, uploadedBy: instructor._id }],
+    });
+    log(`Created study material "${m.title}".`);
+  }
 
   for (const q of EXTRA_QUIZZES) {
     if (await Quiz.exists({ title: q.title })) continue;

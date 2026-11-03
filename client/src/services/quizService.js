@@ -6,6 +6,11 @@ export const quizService = {
     return data;
   },
 
+  async createQuiz(payload) {
+    const { data } = await api.post('/quizzes', payload);
+    return data;
+  },
+
   async getQuiz(quizId) {
     const { data } = await api.get(`/quizzes/${quizId}`);
     return data;

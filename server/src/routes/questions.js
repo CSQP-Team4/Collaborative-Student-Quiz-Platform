@@ -35,4 +35,10 @@ router.get(
   questionImportController.exportQuestions
 );
 
+router.get(
+  '/questions',
+  ...questionManager,
+  questionImportController.listQuestions
+);
+
 module.exports = router;

@@ -5,10 +5,12 @@ const TILES = [
   {
     title: 'Users & roles',
     description: 'Manage accounts and assign Instructor or Admin roles.',
+    to: '/admin/users',
   },
   {
     title: 'Audit log',
     description: 'Logins, lockouts and approval actions with user, IP and time.',
+    to: '/admin/audit',
   },
   {
     title: 'Uptime report',

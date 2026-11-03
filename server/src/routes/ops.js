@@ -8,4 +8,7 @@ const router = express.Router();
 router.get('/uptime', authenticateToken, authorizeRoles('admin'), opsController.getUptimeReport);
 router.post('/maintenance', authenticateToken, authorizeRoles('admin'), opsController.scheduleMaintenance);
 
+// CSQP-11 / CSQP-SR-005: audit log viewer (admins only)
+router.get('/audit', authenticateToken, authorizeRoles('admin'), opsController.getAuditLogs);
+
 module.exports = router;

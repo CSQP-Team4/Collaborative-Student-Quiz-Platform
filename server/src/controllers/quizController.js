@@ -145,7 +145,7 @@ exports.createQuiz = async (req, res) => {
       duration,
       attemptCap,
       createdBy: req.user.id,
-      isPublished: false,
+      isPublished: req.body.isPublished !== undefined ? Boolean(req.body.isPublished) : false,
     });
 
     return res.status(201).json({

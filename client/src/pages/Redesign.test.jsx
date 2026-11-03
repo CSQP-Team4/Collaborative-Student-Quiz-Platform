@@ -27,15 +27,15 @@ beforeEach(() => vi.clearAllMocks());
 describe('App shell navigation', () => {
   it('shows each role only its own pages, and no pages that are not built yet', async () => {
     const { unmount } = renderApp('/student', as(studentUser));
-    expect(await sidebarLinks()).toEqual(['Home', 'Quizzes', 'My progress', 'Leaderboard', 'Profile settings']);
+    expect(await sidebarLinks()).toEqual(['Home', 'Quizzes', 'Study materials', 'My progress', 'Leaderboard', 'Profile settings']);
     unmount();
 
     const second = renderApp('/instructor', as(instructorUser));
-    expect(await sidebarLinks()).toEqual(['Home', 'Class analytics', 'Leaderboard']);
+    expect(await sidebarLinks()).toEqual(['Home', 'Create quiz', 'Question bank', 'Class analytics', 'Leaderboard']);
     second.unmount();
 
     renderApp('/admin', as(adminUser));
-    expect(await sidebarLinks()).toEqual(['Home', 'Uptime report', 'Class analytics', 'Leaderboard']);
+    expect(await sidebarLinks()).toEqual(['Home', 'Users & roles', 'Audit log', 'Uptime report', 'Class analytics', 'Leaderboard']);
   });
 
   it('marks the current page in the sidebar', async () => {
@@ -49,9 +49,10 @@ describe('App shell navigation', () => {
   it('dashboard tiles without a page say "Coming soon" and are not links', async () => {
     renderApp('/student', as(studentUser));
     const main = await screen.findByRole('main');
-    expect(within(main).queryByRole('link', { name: 'Study materials' })).not.toBeInTheDocument();
-    expect(within(main).getByText('Study materials')).toBeInTheDocument();
-    expect(within(main).getAllByText('Coming soon')).toHaveLength(2);
+    expect(within(main).getByRole('link', { name: 'Study materials' })).toHaveAttribute('href', '/materials');
+    expect(within(main).queryByRole('link', { name: 'Contribute questions' })).not.toBeInTheDocument();
+    expect(within(main).getByText('Contribute questions')).toBeInTheDocument();
+    expect(within(main).getAllByText('Coming soon')).toHaveLength(1);
     expect(within(main).getByRole('link', { name: 'Quizzes' })).toHaveAttribute('href', '/quizzes');
   });
 

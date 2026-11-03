@@ -9,10 +9,12 @@ const TILES = [
   {
     title: 'Question bank',
     description: 'Add questions or bulk-import them from CSV/Excel.',
+    to: '/instructor/question-bank',
   },
   {
     title: 'Create quiz',
     description: 'Pick or randomly sample questions; set time and attempt limits.',
+    to: '/instructor/create-quiz',
   },
   {
     title: 'Class analytics',

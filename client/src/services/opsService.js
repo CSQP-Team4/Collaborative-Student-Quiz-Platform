@@ -11,6 +11,11 @@ export const opsService = {
     const { data } = await api.post('/ops/maintenance', { start, end, reason });
     return data.maintenance;
   },
+
+  async getAuditLogs() {
+    const { data } = await api.get('/ops/audit');
+    return data.logs;
+  },
 };
 
 export default opsService;

@@ -12,12 +12,12 @@ A full-stack collaborative learning and assessment platform designed for student
 
 ## 📌 Team 4 - Member Profiles & Jira Task Ownership
 
-| Member | SRN | Primary Role | Jira Stories Owned | Sprint 1 Focus | Sprint 2 Focus | Status |
-| :--- | :--- | :--- | :---: | :--- | :--- | :---: |
-| **John S Thomas** | `PES2UG24CS207` | Security & Performance QA / Auth Lead | **10** | Email registration, JWT login, refresh tokens, RBAC middleware, account lockout | Anti-cheat engine, single active attempt, password reset, latency p90 <= 2s benchmark, security audit checklist | **10/10 Done (100%)** |
-| **Krishna Manoj** | `PES2UG24CS236` | Test Engineer / Core Engine Dev | **8** | Project scaffolding, Mongoose schemas, error handling/logging, TLS 1.2+ HTTPS | Bulk question import (CSV/Excel), quiz assembly, countdown timer, instant auto-grading | In Progress |
-| **Harshith R Reddy** | `PES2UG24CS188` | QA Lead / CI & Analytics Dev | **10** | GitHub Actions CI, test seed fixtures, Python analytics skeleton, Auth UI | Student dashboard, instructor class analytics, opt-in leaderboard, report export, WCAG 2.1 AA UI, 99.5% uptime | In Progress |
-| **Kritika Mahapatra** | `PES2UG24CS239` | Test Engineer / Content & UI Dev | **9** | Material upload & limits, material search/filter, version history | Question types (MCQ/TF/Short), question contribution, instructor approval queue, subjective grading queue, ratings & comments, 5K user scale | In Progress |
+| Member | SRN | Primary Role | Jira Stories Owned | Sprint 1 Focus | Sprint 2 Focus |
+| :--- | :--- | :--- | :---: | :--- | :--- |
+| **John S Thomas** | `PES2UG24CS207` | Security & Performance QA / Auth Lead | **10** | Email registration, JWT login, refresh tokens, RBAC middleware, account lockout | Anti-cheat engine, single active attempt, password reset, latency p90 <= 2s benchmark, security audit checklist |
+| **Krishna Manoj** | `PES2UG24CS236` | Test Engineer / Core Engine Dev | **8** | Project scaffolding, Mongoose schemas, error handling/logging, TLS 1.2+ HTTPS | Bulk question import (CSV/Excel), quiz assembly, countdown timer, instant auto-grading |
+| **Harshith R Reddy** | `PES2UG24CS188` | QA Lead / CI & Analytics Dev | **10** | GitHub Actions CI, test seed fixtures, Python analytics skeleton, Auth UI | Student dashboard, instructor class analytics, opt-in leaderboard, report export, WCAG 2.1 AA UI, 99.5% uptime |
+| **Kritika Mahapatra** | `PES2UG24CS239` | Test Engineer / Content & UI Dev | **9** | Material upload & limits, material search/filter, version history | Question types (MCQ/TF/Short), question contribution, instructor approval queue, subjective grading queue, ratings & comments, 5K user scale |
 
 ---
 
@@ -56,7 +56,7 @@ The team manages requirements, sprints, and story tracking through **Jira Softwa
 
 #### 3. Sprint 2 (26 Oct 2026 – 30 Oct 2026)
 * **Goal**: Curated question bank, timed anti-cheat quizzes with auto-grading, analytics dashboards, and non-functional requirement (NFR) validation.
-* **Delivered by John S Thomas (`PES2UG24CS207`) — 100% Completed & Merged**:
+* **Delivered by John S Thomas (`PES2UG24CS207`)**:
   - `CSQP-31`: **Password Reset via Email (CSQP-F-004)** — Secure cryptographic token verification and Gmail SMTP delivery.
   - `CSQP-23`: **Anti-Cheat Engine (CSQP-F-032 / SAD 3.7)** — Fisher-Yates per-attempt question & MCQ option randomization, strict answer-key stripping, and client clipboard / tab-switch lock.
   - `CSQP-24`: **Single Active Attempt Lock (CSQP-F-033 / TC-Att-04)** — Concurrency guard returning 409 Conflict with session resumption.

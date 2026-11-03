@@ -10,15 +10,20 @@ import { ROLE_LABEL, homeFor } from '../../auth/roles';
 const NAV = {
   student: [
     { label: 'Quizzes', path: '/quizzes' },
+    { label: 'Study materials', path: '/materials' },
     { label: 'My progress', path: '/student/progress' },
     { label: 'Leaderboard', path: '/leaderboard' },
     { label: 'Profile settings', path: '/student/settings' },
   ],
   instructor: [
+    { label: 'Create quiz', path: '/instructor/create-quiz' },
+    { label: 'Question bank', path: '/instructor/question-bank' },
     { label: 'Class analytics', path: '/instructor/analytics' },
     { label: 'Leaderboard', path: '/leaderboard' },
   ],
   admin: [
+    { label: 'Users & roles', path: '/admin/users' },
+    { label: 'Audit log', path: '/admin/audit' },
     { label: 'Uptime report', path: '/admin/uptime' },
     { label: 'Class analytics', path: '/instructor/analytics' },
     { label: 'Leaderboard', path: '/leaderboard' },

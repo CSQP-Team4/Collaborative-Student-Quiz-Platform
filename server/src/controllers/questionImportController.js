@@ -326,9 +326,55 @@ async function exportQuestions(req, res) {
   }
 }
 
+async function listQuestions(req, res) {
+  try {
+    const { subject, topic, difficulty, type, search } = req.query;
+    const filter = {};
+
+    if (subject && subject !== 'All') {
+      filter.subject = subject;
+    }
+    if (topic) {
+      filter.topic = topic;
+    }
+    if (difficulty) {
+      filter.difficulty = difficulty;
+    }
+    if (type) {
+      filter.type = type;
+    }
+    if (search && search.trim()) {
+      filter.text = { $regex: search.trim(), $options: 'i' };
+    }
+
+    const questions = await Question.find(filter)
+      .sort({ createdAt: -1 })
+      .limit(150)
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      questions: questions.map((q) => ({
+        id: q._id.toString(),
+        type: q.type,
+        text: q.text,
+        options: q.options || [],
+        subject: q.subject,
+        topic: q.topic,
+        difficulty: q.difficulty,
+        status: q.status,
+        createdAt: q.createdAt,
+      })),
+    });
+  } catch (error) {
+    return sendError(res, 500, 'Unable to fetch questions.');
+  }
+}
+
 module.exports = {
   importQuestions,
   exportQuestions,
+  listQuestions,
   readUploadedRows,
   validateRow,
 };

@@ -19,6 +19,11 @@ import LeaderboardPage from './pages/LeaderboardPage';
 import ProfileSettingsPage from './pages/ProfileSettingsPage';
 import UptimeReportPage from './pages/UptimeReportPage';
 import QuizzesListPage from './pages/QuizzesListPage';
+import StudyMaterialsPage from './pages/StudyMaterialsPage';
+import CreateQuizPage from './pages/CreateQuizPage';
+import QuestionBankPage from './pages/QuestionBankPage';
+import AuditLogPage from './pages/AuditLogPage';
+import UsersRolesPage from './pages/UsersRolesPage';
 import './App.css';
 
 // "/" sends logged-in users to their role's dashboard, everyone else to login.
@@ -70,6 +75,14 @@ export default function App() {
         }
       />
       <Route
+        path="/materials"
+        element={
+          <ProtectedRoute allowedRoles={[ROLES.STUDENT, ROLES.INSTRUCTOR, ROLES.ADMIN]}>
+            <StudyMaterialsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/quiz/:quizId"
         element={
           <ProtectedRoute allowedRoles={[ROLES.STUDENT, ROLES.INSTRUCTOR, ROLES.ADMIN]}>
@@ -82,6 +95,22 @@ export default function App() {
         element={
           <ProtectedRoute allowedRoles={[ROLES.INSTRUCTOR]}>
             <InstructorDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/instructor/create-quiz"
+        element={
+          <ProtectedRoute allowedRoles={[ROLES.INSTRUCTOR, ROLES.ADMIN]}>
+            <CreateQuizPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/instructor/question-bank"
+        element={
+          <ProtectedRoute allowedRoles={[ROLES.INSTRUCTOR, ROLES.ADMIN]}>
+            <QuestionBankPage />
           </ProtectedRoute>
         }
       />
@@ -106,6 +135,22 @@ export default function App() {
         element={
           <ProtectedRoute allowedRoles={[ROLES.STUDENT]}>
             <ProfileSettingsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/audit"
+        element={
+          <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
+            <AuditLogPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/users"
+        element={
+          <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
+            <UsersRolesPage />
           </ProtectedRoute>
         }
       />

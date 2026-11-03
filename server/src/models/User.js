@@ -62,6 +62,25 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    usn: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    department: {
+      type: String,
+      trim: true,
+      default: 'Computer Science & Engineering',
+    },
+    semester: {
+      type: Number,
+      default: 5,
+    },
+    bio: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     refreshTokens: {
       type: [String],
       select: false,
