@@ -168,7 +168,7 @@ describe('CSQP-23 & CSQP-24: Frontend Anti-Cheat & Single Attempt (TC-Att-03, TC
       // Submit
       await user.click(screen.getByRole('button', { name: 'Submit Quiz' }));
 
-      expect(quizService.submitAttempt).toHaveBeenCalledWith('attempt_xyz789', [
+      expect(quizService.submitAttempt).toHaveBeenCalledWith('quiz_abc123', 'attempt_xyz789', [
         { question: 'q1', selectedOption: 'O(log n)' },
         { question: 'q2', selectedOption: 'TCP' },
       ]);
