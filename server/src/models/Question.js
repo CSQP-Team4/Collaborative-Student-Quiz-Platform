@@ -58,4 +58,31 @@ const questionSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// CSQP-F-021: each question type has its own rules.
+questionSchema.pre('validate', function () {
+  const options = (this.options || []).map((o) => String(o).trim()).filter(Boolean);
+  const answer = String(this.answer || '').trim();
+
+  if (this.type === 'MCQ') {
+    if (options.length < 2 || options.length > 6) {
+      throw new Error('MCQ questions need between 2 and 6 options');
+    }
+    const unique = new Set(options.map((o) => o.toLowerCase()));
+    if (unique.size !== options.length) {
+      throw new Error('MCQ options must be unique');
+    }
+    if (!options.includes(answer)) {
+      throw new Error('MCQ answer must match one of the options');
+    }
+  } else if (this.type === 'TRUE_FALSE') {
+    if (!['true', 'false'].includes(answer.toLowerCase())) {
+      throw new Error('True/False answer must be "True" or "False"');
+    }
+  } else if (this.type === 'SUBJECTIVE') {
+    if (!answer) {
+      throw new Error('Short-answer questions need a model answer');
+    }
+  }
+});
+
 module.exports = mongoose.model('Question', questionSchema);
