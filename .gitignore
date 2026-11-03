@@ -17,6 +17,9 @@ env/
 # Testing & Coverage
 /coverage
 .nyc_output
+.coverage
+*/coverage/
+coverage/
 
 # Production Build
 /build
