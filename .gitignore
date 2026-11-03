@@ -54,6 +54,8 @@ lerna-debug.log*
 *.swo
 .DS_Store
 Thumbs.db
-
 # Local Helper Scripts
 scripts/
+
+# Uploads
+server/uploads/
