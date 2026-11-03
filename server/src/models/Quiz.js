@@ -28,6 +28,7 @@ const quizSchema = new mongoose.Schema(
     duration: {
       type: Number,
       required: true,
+      default: 1,
       min: 1,
     },
     createdBy: {

@@ -3,6 +3,14 @@ const router = express.Router();
 const quizController = require('../controllers/quizController');
 const { authenticateToken, authorizeRoles } = require('../middleware/rbac');
 
+// CSQP-20: Create a quiz from manually selected or randomly sampled questions.
+router.post(
+  '/quizzes',
+  authenticateToken,
+  authorizeRoles('instructor', 'admin'),
+  quizController.createQuiz
+);
+
 // Public / student browse routes
 router.get('/quizzes', quizController.listPublishedQuizzes);
 router.get('/quizzes/:id', quizController.getQuizById);

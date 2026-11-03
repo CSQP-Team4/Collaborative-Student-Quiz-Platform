@@ -8,6 +8,174 @@ const {
   verifyPayloadIsAnswerFree,
 } = require('../utils/antiCheat');
 
+
+/**
+ * POST /api/quizzes
+ * CSQP-20: Create a quiz using manual selection or random sampling.
+ */
+exports.createQuiz = async (req, res) => {
+  try {
+    const {
+      title,
+      subject,
+      description = '',
+      selectionMode,
+      questionIds,
+      questionCount,
+      duration,
+      attemptCap,
+    } = req.body || {};
+
+    // Validate common quiz configuration.
+    if (
+      typeof title !== 'string' ||
+      !title.trim() ||
+      typeof subject !== 'string' ||
+      !subject.trim() ||
+      !Number.isInteger(duration) ||
+      duration < 1 ||
+      !Number.isInteger(attemptCap) ||
+      attemptCap < 1
+    ) {
+      return res.status(400).json({
+        success: false,
+        statusCode: 400,
+        error: 'INVALID_QUIZ_CONFIGURATION',
+        message:
+          'Title, subject, positive integer duration and positive integer attempt cap are required.',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    if (!['manual', 'random'].includes(selectionMode)) {
+      return res.status(400).json({
+        success: false,
+        statusCode: 400,
+        error: 'INVALID_SELECTION_MODE',
+        message: 'Selection mode must be manual or random.',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    let selectedQuestions;
+
+    if (selectionMode === 'manual') {
+      if (
+        !Array.isArray(questionIds) ||
+        questionIds.length === 0 ||
+        !questionIds.every((id) =>
+          mongoose.Types.ObjectId.isValid(id)
+        ) ||
+        new Set(questionIds.map(String)).size !== questionIds.length
+      ) {
+        return res.status(400).json({
+          success: false,
+          statusCode: 400,
+          error: 'INVALID_QUESTION_SELECTION',
+          message:
+            'Select at least one question using unique, valid question IDs.',
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      selectedQuestions = await Question.find({
+        _id: { $in: questionIds },
+        status: 'approved',
+        subject: subject.trim(),
+      }).select('_id');
+
+      if (selectedQuestions.length !== questionIds.length) {
+        return res.status(400).json({
+          success: false,
+          statusCode: 400,
+          error: 'INVALID_QUESTION_SELECTION',
+          message:
+            'All selected questions must exist, be approved, and belong to the specified subject.',
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      // Preserve the instructor's selection order.
+      const questionMap = new Map(
+        selectedQuestions.map((q) => [q._id.toString(), q._id])
+      );
+      selectedQuestions = questionIds.map((id) => ({
+        _id: questionMap.get(String(id)),
+      }));
+    } else {
+      if (!Number.isInteger(questionCount) || questionCount < 1) {
+        return res.status(400).json({
+          success: false,
+          statusCode: 400,
+          error: 'INVALID_QUESTION_COUNT',
+          message: 'Question count must be a positive integer.',
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      selectedQuestions = await Question.aggregate([
+        {
+          $match: {
+            subject: subject.trim(),
+            status: 'approved',
+          },
+        },
+        { $sample: { size: questionCount } },
+        { $project: { _id: 1 } },
+      ]);
+
+      if (selectedQuestions.length !== questionCount) {
+        return res.status(400).json({
+          success: false,
+          statusCode: 400,
+          error: 'INSUFFICIENT_QUESTIONS',
+          message:
+            'Not enough approved questions exist for the requested question count.',
+          timestamp: new Date().toISOString(),
+        });
+      }
+    }
+
+    const quiz = await Quiz.create({
+      title: title.trim(),
+      subject: subject.trim(),
+      description:
+        typeof description === 'string' ? description.trim() : '',
+      questions: selectedQuestions.map((q) => q._id),
+      duration,
+      attemptCap,
+      createdBy: req.user.id,
+      isPublished: false,
+    });
+
+    return res.status(201).json({
+      success: true,
+      statusCode: 201,
+      message: 'Quiz created successfully.',
+      quiz: {
+        id: quiz._id,
+        title: quiz.title,
+        subject: quiz.subject,
+        description: quiz.description,
+        questionCount: quiz.questions.length,
+        duration: quiz.duration,
+        attemptCap: quiz.attemptCap,
+        isPublished: quiz.isPublished,
+      },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      statusCode: 500,
+      error: 'SERVER_ERROR',
+      message: error.message || 'Failed to create quiz.',
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+
 /**
  * GET /api/quizzes
  * Returns all published quizzes available for students to take
