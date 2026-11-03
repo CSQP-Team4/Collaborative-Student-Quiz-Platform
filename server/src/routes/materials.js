@@ -323,4 +323,184 @@ router.post(
   }
 );
 
+
+// ---------------------------------------------------------------------------
+// CSQP-15: Study material revision history and versioning
+// Old files are never overwritten: every upload becomes a new version, and the
+// material's main fileUrl always points at the latest one.
+// ---------------------------------------------------------------------------
+const path = require('path');
+
+// Files uploaded through /upload are stored locally and served under this prefix
+const LOCAL_FILE_PREFIX = '/api/materials/files/';
+const isLocalFile = (url) => typeof url === 'string' && url.startsWith(LOCAL_FILE_PREFIX);
+
+// Materials created before versioning existed have no versions array.
+// Their current file is treated as version 1.
+const versionsOf = (material) =>
+  material.versions && material.versions.length
+    ? material.versions
+    : [{
+        version: 1,
+        fileUrl: material.fileUrl,
+        uploadedBy: material.uploadedBy,
+        uploadedAt: material.createdAt,
+      }];
+
+// POST /api/materials/:id/versions - Upload a new revision of a material (CSQP-15)
+// Allowed for the original uploader or an instructor. Form field "file".
+router.post(
+  '/:id/versions',
+  authenticateToken,
+  authorizeRoles('student', 'instructor'),
+  uploadSingleFile,
+  async (req, res, next) => {
+    try {
+      if (!mongoose.isValidObjectId(req.params.id)) {
+        await discardUpload(req.file);
+        return fail(res, 400, 'VALIDATION_ERROR', 'Invalid material ID.');
+      }
+
+      if (!req.file) {
+        return fail(res, 400, 'VALIDATION_ERROR', 'A file is required in the "file" field.');
+      }
+
+      const material = await Material.findById(req.params.id);
+      if (!material) {
+        await discardUpload(req.file);
+        return fail(res, 404, 'NOT_FOUND', 'Study material not found.');
+      }
+
+      const isOwner = String(material.uploadedBy) === String(req.user.id);
+      const isInstructor = (req.user.role || '').toLowerCase() === 'instructor';
+      if (!isOwner && !isInstructor) {
+        await discardUpload(req.file);
+        return fail(
+          res,
+          403,
+          'FORBIDDEN',
+          'Only the original uploader or an instructor can add a new version.'
+        );
+      }
+
+      // Older materials without a history: record their current file as version 1 first
+      if (material.versions.length === 0) {
+        material.versions.push({
+          version: 1,
+          fileUrl: material.fileUrl,
+          uploadedBy: material.uploadedBy,
+        });
+      }
+
+      const latest = Math.max(...material.versions.map((v) => v.version));
+      const nextVersion = latest + 1;
+      const fileUrl = `${LOCAL_FILE_PREFIX}${req.file.filename}`;
+
+      material.versions.push({ version: nextVersion, fileUrl, uploadedBy: req.user.id });
+      material.fileUrl = fileUrl; // main link always points at the newest version
+      await material.save();
+
+      res.status(201).json({
+        success: true,
+        message: 'New version uploaded successfully.',
+        materialId: material._id,
+        currentVersion: nextVersion,
+        version: material.versions[material.versions.length - 1],
+      });
+    } catch (error) {
+      await discardUpload(req.file);
+      next(error);
+    }
+  }
+);
+
+// GET /api/materials/:id/versions - List the revision history, newest first (CSQP-15)
+router.get('/:id/versions', authenticateToken, async (req, res, next) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return fail(res, 400, 'VALIDATION_ERROR', 'Invalid material ID.');
+    }
+
+    const material = await Material.findById(req.params.id)
+      .populate('uploadedBy', 'name email')
+      .populate('versions.uploadedBy', 'name email')
+      .lean();
+
+    if (!material) {
+      return fail(res, 404, 'NOT_FOUND', 'Study material not found.');
+    }
+
+    const all = versionsOf(material);
+    const currentVersion = Math.max(...all.map((v) => v.version));
+
+    const versions = all
+      .map((v) => ({
+        version: v.version,
+        fileUrl: v.fileUrl,
+        uploadedBy: v.uploadedBy,
+        uploadedAt: v.uploadedAt,
+        isCurrent: v.version === currentVersion,
+        downloadUrl: `/api/materials/${material._id}/versions/${v.version}/download`,
+      }))
+      .sort((a, b) => b.version - a.version);
+
+    res.status(200).json({
+      success: true,
+      materialId: material._id,
+      title: material.title,
+      currentVersion,
+      count: versions.length,
+      versions,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/materials/:id/versions/:n/download - Download one specific version (CSQP-15)
+router.get('/:id/versions/:n/download', authenticateToken, async (req, res, next) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return fail(res, 400, 'VALIDATION_ERROR', 'Invalid material ID.');
+    }
+
+    const versionNumber = Number(req.params.n);
+    if (!Number.isInteger(versionNumber) || versionNumber < 1) {
+      return fail(res, 400, 'VALIDATION_ERROR', 'Version must be a positive whole number.');
+    }
+
+    const material = await Material.findById(req.params.id).lean();
+    if (!material) {
+      return fail(res, 404, 'NOT_FOUND', 'Study material not found.');
+    }
+
+    const entry = versionsOf(material).find((v) => v.version === versionNumber);
+    if (!entry) {
+      return fail(res, 404, 'NOT_FOUND', `Version ${versionNumber} does not exist.`);
+    }
+
+    // Only files stored by this server can be downloaded here
+    if (!isLocalFile(entry.fileUrl)) {
+      return fail(res, 404, 'FILE_NOT_AVAILABLE', 'This version is not stored on this server.');
+    }
+
+    // path.basename prevents "../" tricks from escaping the uploads folder
+    const filePath = path.join(UPLOAD_DIR, path.basename(entry.fileUrl));
+    try {
+      await fs.promises.access(filePath);
+    } catch {
+      return fail(res, 404, 'FILE_NOT_AVAILABLE', 'The file for this version is missing on the server.');
+    }
+
+    const safeTitle = String(material.title).replace(/[^a-zA-Z0-9_-]+/g, '_').slice(0, 60);
+    const downloadName = `${safeTitle}-v${versionNumber}${path.extname(filePath)}`;
+
+    res.download(filePath, downloadName, (err) => {
+      if (err && !res.headersSent) next(err);
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;
