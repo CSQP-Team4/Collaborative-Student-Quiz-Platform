@@ -87,6 +87,10 @@ const quizAttemptSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    expiresAt: {
+      type: Date,
+      required: false,
+    },
     submittedAt: {
       type: Date,
       default: null,

@@ -109,7 +109,7 @@ const mockAuthService = {
     save(state);
   },
 
-  async forgotPassword({ email }) {
+  async forgotPassword({ email: _email }) {
     await delay();
     return {
       message: 'If an account exists with this email, a password reset link has been sent.',
@@ -117,7 +117,7 @@ const mockAuthService = {
     };
   },
 
-  async resetPassword({ token, email, password }) {
+  async resetPassword({ token: _token, email, password }) {
     await delay();
     const state = load();
     const user = email ? state.users.find((u) => u.email === email.trim().toLowerCase()) : state.users[0];
