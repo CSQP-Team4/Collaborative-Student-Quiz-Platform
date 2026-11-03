@@ -1,11 +1,10 @@
-import { useEffect, useState, useMemo } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import quizService from '../services/quizService';
 import useAntiCheat from '../hooks/useAntiCheat';
 
 export default function QuizAttemptPage() {
   const { quizId } = useParams();
-  const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -20,11 +19,20 @@ export default function QuizAttemptPage() {
 
   const isAttemptActive = Boolean(attempt && attempt.status === 'in_progress' && !submissionResult);
 
+  const initTimer = (attemptData) => {
+    if (!attemptData?.endsAt) return;
+    const ends = new Date(attemptData.endsAt).getTime();
+    const now = Date.now();
+    const remainingSecs = Math.max(0, Math.floor((ends - now) / 1000));
+    setTimeLeft(remainingSecs);
+  };
+
   // Anti-Cheat Engine (CSQP-23 / SAD 3.9)
-  const { violationCount, isFlagged, lastViolation } = useAntiCheat({
+  const { violationCount, isFlagged } = useAntiCheat({
     attemptId: attempt?.id,
     enabled: isAttemptActive,
   });
+  const handleSubmitRef = useRef(null);
 
   // Start or check attempt on mount
   useEffect(() => {
@@ -63,19 +71,13 @@ export default function QuizAttemptPage() {
     };
   }, [quizId]);
 
-  const initTimer = (attemptData) => {
-    if (!attemptData?.endsAt) return;
-    const ends = new Date(attemptData.endsAt).getTime();
-    const now = Date.now();
-    const remainingSecs = Math.max(0, Math.floor((ends - now) / 1000));
-    setTimeLeft(remainingSecs);
-  };
 
   // Timer countdown
   useEffect(() => {
     if (!isAttemptActive || timeLeft === null) return;
+
     if (timeLeft <= 0) {
-      handleSubmit();
+      handleSubmitRef.current?.();
       return;
     }
 
@@ -121,15 +123,18 @@ export default function QuizAttemptPage() {
     }));
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (!attempt?.id || submitting || submissionResult) return;
 
     try {
       setSubmitting(true);
-      const responses = Object.entries(selectedAnswers).map(([question, selectedOption]) => ({
-        question,
-        selectedOption,
-      }));
+
+      const responses = Object.entries(selectedAnswers).map(
+        ([question, selectedOption]) => ({
+          question,
+          selectedOption,
+        })
+      );
 
       const res = await quizService.submitAttempt(attempt.id, responses);
       setSubmissionResult(res);
@@ -138,7 +143,11 @@ export default function QuizAttemptPage() {
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [attempt, submitting, submissionResult, selectedAnswers]);
+
+  useEffect(() => {
+    handleSubmitRef.current = handleSubmit;
+  }, [handleSubmit]);
 
   if (loading) {
     return (

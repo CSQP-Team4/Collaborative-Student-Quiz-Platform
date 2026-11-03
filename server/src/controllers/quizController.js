@@ -146,7 +146,10 @@ exports.startQuizAttempt = async (req, res) => {
 
     if (existingAttempt) {
       const durationMs = quiz.duration * 60 * 1000;
-      const isExpired = new Date(existingAttempt.startedAt.getTime() + durationMs) < new Date();
+      const expiresAt =
+        existingAttempt.expiresAt ||
+        new Date(existingAttempt.startedAt.getTime() + durationMs);
+      const isExpired = Date.now() >= expiresAt.getTime();
 
       if (isExpired) {
         // Auto-close timed out attempt
@@ -165,7 +168,7 @@ exports.startQuizAttempt = async (req, res) => {
             quizTitle: quiz.title,
             duration: quiz.duration,
             startedAt: existingAttempt.startedAt,
-            endsAt: new Date(existingAttempt.startedAt.getTime() + durationMs),
+            endsAt: expiresAt,
             questions: existingAttempt.shuffledQuestions,
             status: existingAttempt.status,
           },
@@ -206,12 +209,15 @@ exports.startQuizAttempt = async (req, res) => {
     const durationMs = quiz.duration * 60 * 1000;
     const now = new Date();
 
+    const expiresAt = new Date(now.getTime() + durationMs);
+
     const attempt = await QuizAttempt.create({
       student: studentId,
       quiz: quiz._id,
       status: 'in_progress',
       shuffledQuestions: randomized,
       startedAt: now,
+      expiresAt,
     });
 
     return res.status(201).json({
@@ -223,7 +229,7 @@ exports.startQuizAttempt = async (req, res) => {
         quizTitle: quiz.title,
         duration: quiz.duration,
         startedAt: attempt.startedAt,
-        endsAt: new Date(attempt.startedAt.getTime() + durationMs),
+        endsAt: attempt.expiresAt,
         questions: attempt.shuffledQuestions,
         status: attempt.status,
       },
@@ -374,7 +380,14 @@ exports.submitQuizAttempt = async (req, res) => {
 
     attempt.responses = formattedResponses;
     attempt.score = calculatedScore;
-    attempt.status = 'submitted';
+    const durationMs = attempt.quiz.duration * 60 * 1000;
+    const expiresAt =
+      attempt.expiresAt ||
+      new Date(attempt.startedAt.getTime() + durationMs);
+
+    attempt.status = Date.now() >= expiresAt.getTime()
+      ? 'timed_out'
+      : 'submitted';
     attempt.submittedAt = new Date();
     await attempt.save();
 
