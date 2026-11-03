@@ -1,6 +1,11 @@
 import api from '../api/api';
 
 export const quizService = {
+  async listQuizzes() {
+    const { data } = await api.get('/quizzes');
+    return data;
+  },
+
   async getQuiz(quizId) {
     const { data } = await api.get(`/quizzes/${quizId}`);
     return data;

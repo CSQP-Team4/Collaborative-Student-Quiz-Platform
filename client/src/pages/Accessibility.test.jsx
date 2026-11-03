@@ -18,7 +18,7 @@ vi.mock('../services/leaderboardService', () => ({
 }));
 vi.mock('../services/opsService', () => ({ default: { getUptimeReport: vi.fn(), scheduleMaintenance: vi.fn() } }));
 vi.mock('../services/quizService', () => ({
-  default: { getQuiz: vi.fn(), startAttempt: vi.fn(), recordAntiCheatEvent: vi.fn(), submitAttempt: vi.fn() },
+  default: { listQuizzes: vi.fn(), getQuiz: vi.fn(), startAttempt: vi.fn(), recordAntiCheatEvent: vi.fn(), submitAttempt: vi.fn() },
 }));
 
 const as = (user) => makeService({ refresh: vi.fn().mockResolvedValue({ accessToken: 't', user }) });
@@ -59,6 +59,9 @@ beforeEach(() => {
     incidents: [], maintenance: [],
   });
   quizService.startAttempt.mockResolvedValue(ATTEMPT);
+  quizService.listQuizzes.mockResolvedValue({
+    quizzes: [{ id: 'q1', title: 'Data Structures Basics', subject: 'Data Structures', description: 'Lists and trees.', duration: 10, questionCount: 5, instructor: 'Demo Instructor' }],
+  });
 });
 
 const SCREENS = [
@@ -71,6 +74,7 @@ const SCREENS = [
   ['leaderboard', '/leaderboard', studentUser, { name: 'Quiz', level: 2 }],
   ['profile settings', '/student/settings', studentUser, { name: 'Leaderboard', level: 2 }],
   ['quiz attempt', '/quiz/q1', studentUser, { name: 'Data Structures Basics', level: 1 }],
+  ['quizzes list', '/quizzes', studentUser, { name: 'Data Structures Basics', level: 2 }],
   ['instructor dashboard', '/instructor', instructorUser, { name: /Welcome/ }],
   ['class analytics', '/instructor/analytics', instructorUser, { name: 'Quiz', level: 2 }],
   ['admin dashboard', '/admin', adminUser, { name: /Welcome/ }],

@@ -3,6 +3,20 @@ import { useParams, Link } from 'react-router-dom';
 import quizService from '../services/quizService';
 import useAntiCheat from '../hooks/useAntiCheat';
 
+// React StrictMode runs the start effect twice in development. Two parallel
+// POST /attempts either created two attempts or the second one got a 409
+// "active attempt" and showed the conflict screen. Calls for the same quiz
+// that overlap share one request.
+const inFlightStarts = new Map();
+
+function startAttemptOnce(quizId) {
+  if (!inFlightStarts.has(quizId)) {
+    const request = quizService.startAttempt(quizId).finally(() => inFlightStarts.delete(quizId));
+    inFlightStarts.set(quizId, request);
+  }
+  return inFlightStarts.get(quizId);
+}
+
 export default function QuizAttemptPage() {
   const { quizId } = useParams();
 
@@ -43,7 +57,7 @@ export default function QuizAttemptPage() {
         setLoading(true);
         setError(null);
         setConflictAttemptId(null);
-        const data = await quizService.startAttempt(quizId);
+        const data = await startAttemptOnce(quizId);
         if (isMounted) {
           setAttempt(data.attempt);
           initTimer(data.attempt);

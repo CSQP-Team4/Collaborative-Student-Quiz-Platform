@@ -29,7 +29,8 @@ describe('Uptime report (CSQP-35)', () => {
     opsService.getUptimeReport.mockResolvedValue(REPORT);
     renderApp('/admin', loggedInAs(adminUser));
 
-    await user.click(await screen.findByRole('link', { name: 'Uptime report' }));
+    // The page is in the sidebar and on a dashboard card; use the card.
+    await user.click(within(await screen.findByRole('main')).getByRole('link', { name: 'Uptime report' }));
     expect(await screen.findByText('Operational')).toBeInTheDocument();
 
     const rows = within(screen.getByRole('table')).getAllByRole('row');
