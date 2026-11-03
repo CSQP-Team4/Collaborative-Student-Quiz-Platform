@@ -21,9 +21,23 @@ const fail = (res, status, error, message) =>
 const discardUpload = (file) =>
   file ? fs.promises.unlink(file.path).catch(() => {}) : Promise.resolve();
 
-// GET /api/materials - View and search study materials
+// Escape special regex characters so user input is treated as plain text
+const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+// Accept only plain strings from the query (repeated params like ?a=1&a=2 become arrays)
+const str = (value) => (typeof value === 'string' ? value.trim() : '');
+
+const SORT_OPTIONS = {
+  newest: { createdAt: -1 },
+  oldest: { createdAt: 1 },
+  title: { title: 1 },
+};
+
+// GET /api/materials - Search and filter study materials (CSQP-14)
+// Query params: q, subject, tag/tags, uploader, from, to, sort, page, limit
 router.get('/', authenticateToken, async (req, res, next) => {
   try {
+    // Existing demo-data behaviour (kept from main): seed sample materials if the collection is empty
     const totalMaterials = await Material.countDocuments();
     if (totalMaterials === 0) {
       const User = require('../models/User');
@@ -75,34 +89,95 @@ router.get('/', authenticateToken, async (req, res, next) => {
       }
     }
 
-    const { search, subject } = req.query;
     const filter = {};
 
-    if (search && search.trim()) {
-      const escapedSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const searchRegex = new RegExp(escapedSearch, 'i');
-
+    // Keyword search across title, subject and tags ("search" is kept for older callers)
+    const keyword = str(req.query.q) || str(req.query.search);
+    if (keyword) {
+      const keywordRegex = new RegExp(escapeRegex(keyword), 'i');
       filter.$or = [
-        { title: searchRegex },
-        { subject: searchRegex },
-        { tags: searchRegex },
+        { title: keywordRegex },
+        { subject: keywordRegex },
+        { tags: keywordRegex },
       ];
     }
 
-    if (subject && subject.trim()) {
-      filter.subject = new RegExp(
-        subject.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
-        'i'
-      );
+    // Subject filter (partial, case-insensitive)
+    const subject = str(req.query.subject);
+    if (subject) {
+      filter.subject = new RegExp(escapeRegex(subject), 'i');
     }
 
-    const materials = await Material.find(filter)
-      .populate('uploadedBy', 'name email')
-      .sort({ createdAt: -1 });
+    // Tag filter: material must contain ALL requested tags (exact, case-insensitive)
+    const tagList = [...str(req.query.tag).split(','), ...str(req.query.tags).split(',')]
+      .map((t) => t.trim())
+      .filter(Boolean);
+    if (tagList.length) {
+      filter.tags = {
+        $all: tagList.map((t) => new RegExp(`^${escapeRegex(t)}$`, 'i')),
+      };
+    }
+
+    // Uploader filter: a user ID, or "me" for the logged-in user's own materials
+    const uploader = str(req.query.uploader);
+    if (uploader) {
+      const uploaderId = uploader === 'me' ? req.user.id : uploader;
+      if (!mongoose.isValidObjectId(uploaderId)) {
+        return fail(res, 400, 'VALIDATION_ERROR', 'Invalid uploader ID.');
+      }
+      filter.uploadedBy = uploaderId;
+    }
+
+    // Date range filter on upload date (the "to" date includes the whole day)
+    const dateRange = {};
+    const from = str(req.query.from);
+    const to = str(req.query.to);
+    if (from) {
+      const fromDate = new Date(from);
+      if (Number.isNaN(fromDate.getTime())) {
+        return fail(res, 400, 'VALIDATION_ERROR', 'Invalid "from" date. Use YYYY-MM-DD.');
+      }
+      dateRange.$gte = fromDate;
+    }
+    if (to) {
+      const toDate = new Date(to);
+      if (Number.isNaN(toDate.getTime())) {
+        return fail(res, 400, 'VALIDATION_ERROR', 'Invalid "to" date. Use YYYY-MM-DD.');
+      }
+      toDate.setUTCHours(23, 59, 59, 999);
+      dateRange.$lte = toDate;
+    }
+    if (Object.keys(dateRange).length) {
+      filter.createdAt = dateRange;
+    }
+
+    // Sorting (only whitelisted options)
+    const sortKey = str(req.query.sort) || 'newest';
+    const sortBy = SORT_OPTIONS[sortKey];
+    if (!sortBy) {
+      return fail(res, 400, 'VALIDATION_ERROR', 'sort must be one of: newest, oldest, title.');
+    }
+
+    // Pagination (default 10 per page, maximum 50)
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 10, 1), 50);
+
+    const [materials, total] = await Promise.all([
+      Material.find(filter)
+        .populate('uploadedBy', 'name email')
+        .sort(sortBy)
+        .skip((page - 1) * limit)
+        .limit(limit),
+      Material.countDocuments(filter),
+    ]);
 
     res.status(200).json({
       success: true,
-      count: materials.length,
+      count: materials.length, // number of items on this page
+      total,                   // total matches across all pages
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
       materials,
     });
   } catch (error) {
@@ -247,4 +322,5 @@ router.post(
     }
   }
 );
+
 module.exports = router;
