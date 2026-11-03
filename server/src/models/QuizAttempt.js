@@ -12,6 +12,11 @@ const responseSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    gradingStatus: {
+      type: String,
+      enum: ['Graded', 'Pending Review'],
+      default: 'Graded',
+    },
   },
   { _id: false }
 );

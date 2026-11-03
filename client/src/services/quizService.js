@@ -16,8 +16,11 @@ export const quizService = {
     return data;
   },
 
-  async submitAttempt(attemptId, responses) {
-    const { data } = await api.post(`/attempts/${attemptId}/submit`, { responses });
+  async submitAttempt(quizId, attemptId, responses) {
+    const { data } = await api.post(
+      `/quizzes/${quizId}/submit`,
+      { attemptId, responses }
+    );
     return data;
   },
 };
