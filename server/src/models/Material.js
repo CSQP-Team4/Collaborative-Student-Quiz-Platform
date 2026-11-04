@@ -1,4 +1,3 @@
-
 const mongoose = require('mongoose');
 
 const materialVersionSchema = new mongoose.Schema(
@@ -52,6 +51,14 @@ const materialSchema = new mongoose.Schema(
     versions: {
       type: [materialVersionSchema],
       default: [],
+    },
+    ratingAverage: {
+      type: Number,
+      default: 0,
+    },
+    ratingCount: {
+      type: Number,
+      default: 0,
     },
   },
   { timestamps: true }
