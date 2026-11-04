@@ -4,6 +4,7 @@ const multer = require('multer');
 
 const router = express.Router();
 const questionImportController = require('../controllers/questionImportController');
+const questionController = require('../controllers/questionController');
 const {
   authenticateToken,
   authorizeRoles,
@@ -22,6 +23,18 @@ const questionManager = [
   authorizeRoles('instructor', 'admin'),
 ];
 
+const questionContributor = [
+  authenticateToken,
+  authorizeRoles('student', 'instructor', 'admin'),
+];
+
+// CSQP-F-020: contribute a question to the shared bank.
+router.post(
+  '/questions',
+  ...questionContributor,
+  questionController.createQuestion
+);
+
 router.post(
   '/questions/import',
   ...questionManager,
@@ -39,6 +52,19 @@ router.get(
   '/questions',
   ...questionManager,
   questionImportController.listQuestions
+);
+
+// CSQP-F-023: instructor approval queue.
+router.get(
+  '/questions/pending',
+  ...questionManager,
+  questionController.listPendingQuestions
+);
+
+router.patch(
+  '/questions/:id/status',
+  ...questionManager,
+  questionController.updateQuestionStatus
 );
 
 module.exports = router;

@@ -328,7 +328,7 @@ async function exportQuestions(req, res) {
 
 async function listQuestions(req, res) {
   try {
-    const { subject, topic, difficulty, type, search } = req.query;
+    const { subject, topic, difficulty, type, status, search } = req.query;
     const filter = {};
 
     if (subject && subject !== 'All') {
@@ -342,6 +342,9 @@ async function listQuestions(req, res) {
     }
     if (type) {
       filter.type = type;
+    }
+    if (['pending', 'approved', 'rejected'].includes(status)) {
+      filter.status = status;
     }
     if (search && search.trim()) {
       filter.text = { $regex: search.trim(), $options: 'i' };
