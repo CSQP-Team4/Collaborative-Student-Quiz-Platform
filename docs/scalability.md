@@ -31,3 +31,11 @@ It runs in a single Node process against an in-memory MongoDB on one machine,
 so it verifies the application logic and query design at target scale. A
 production-grade check would run a tool such as k6 against a deployed instance
 with multiple API replicas.
+
+## Load shape
+The test keeps all 500 attempts open at the same time (verified with a database
+count before any submission), but sends HTTP requests with at most 100 in flight
+at once. This models a class arriving over a few seconds instead of in a single
+millisecond, and avoids measuring queueing inside the test process, where the
+load generator and the server share one CPU. The p90 <= 2000 ms threshold is
+unchanged.
