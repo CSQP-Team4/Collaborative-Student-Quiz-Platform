@@ -4,6 +4,11 @@ const Material = require('../models/Material');
 const fs = require('fs');
 const { authenticateToken, authorizeRoles } = require('../middleware/rbac');
 const { uploadSingleFile, UPLOAD_DIR } = require('../middleware/upload');
+const {
+  rateMaterial,
+  addComment,
+  listComments,
+} = require('../controllers/materialFeedbackController');
 
 const router = express.Router();
 
@@ -96,9 +101,15 @@ router.get('/', authenticateToken, async (req, res, next) => {
       );
     }
 
+    // CSQP-26: ?sort=rating puts the best-rated materials first
+    const sort =
+      req.query.sort === 'rating'
+        ? { ratingAverage: -1, ratingCount: -1, createdAt: -1 }
+        : { createdAt: -1 };
+
     const materials = await Material.find(filter)
       .populate('uploadedBy', 'name email')
-      .sort({ createdAt: -1 });
+      .sort(sort);
 
     res.status(200).json({
       success: true,
@@ -193,6 +204,11 @@ router.get('/:id', authenticateToken, async (req, res, next) => {
   }
 });
 
+// CSQP-26: ratings and comments on materials
+router.put('/:id/rating', authenticateToken, rateMaterial);
+router.post('/:id/comments', authenticateToken, addComment);
+router.get('/:id/comments', authenticateToken, listComments);
+
 // Uploaded files are only served to logged-in users (CSQP-13)
 router.use('/files', authenticateToken, express.static(UPLOAD_DIR));
 
@@ -215,7 +231,7 @@ router.post(
         typeof subject !== 'string' || !subject.trim()
       ) {
         await discardUpload(req.file);
-        return fail(res, 400, 'VALIDATION_ERROR', 'Title and subject are required.');
+        return fail(res, 400, 'VALIDATION_ERROR', 'Title and subjectare required.');
       }
 
       const materialTags = Array.isArray(tags)
