@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const quizController = require('../controllers/quizController');
+const gradingController = require('../controllers/gradingController');
 const { authenticateToken, authorizeRoles } = require('../middleware/rbac');
 
 // CSQP-21: Start a quiz attempt.
@@ -51,6 +52,21 @@ router.post(
   authenticateToken,
   authorizeRoles('student', 'admin'),
   quizController.submitQuizAttempt
+);
+
+// CSQP-25: manual grading queue for short answers.
+router.get(
+  '/grading/queue',
+  authenticateToken,
+  authorizeRoles('instructor', 'admin'),
+  gradingController.listPendingReview
+);
+
+router.patch(
+  '/attempts/:id/responses/:questionId/grade',
+  authenticateToken,
+  authorizeRoles('instructor', 'admin'),
+  gradingController.gradeResponse
 );
 
 module.exports = router;

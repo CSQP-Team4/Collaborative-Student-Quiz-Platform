@@ -17,6 +17,12 @@ const responseSchema = new mongoose.Schema(
       enum: ['Graded', 'Pending Review'],
       default: 'Graded',
     },
+    // CSQP-25: marks awarded by an instructor for a short answer.
+    marks: {
+      type: Number,
+      default: null,
+      min: 0,
+    },
   },
   { _id: false }
 );
