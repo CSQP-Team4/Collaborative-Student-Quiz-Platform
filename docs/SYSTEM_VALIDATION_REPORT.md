@@ -4,8 +4,8 @@
 **Document Reference:** CSQP-STP-VAL-001  
 **Associated SRS:** v1.0 (`docs/Team4_SRS.pdf`)  
 **Associated Test Plan:** IEEE Std 829 (`docs/Team4_TestPlan.pdf`)  
-**Date of Execution:** 03 November 2026  
-**Status:** **PASSED (371 / 371 Automated Tests Passing)**
+**Date of Execution:** 04 November 2026  
+**Status:** **PASSED (420 / 420 Automated Tests Passing)**
 
 ---
 
@@ -17,10 +17,10 @@ This System Validation Report certifies that the **Collaborative Student Study M
 ┌─────────────────────────────────┬───────────┬──────────┬────────┐
 │ Test Suite                      │ Total     │ Passed   │ Failed │
 ├─────────────────────────────────┼───────────┼──────────┼────────┤
-│ Server (Node.js / Express / DB) │ 237 tests │ 237      │ 0      │
+│ Server (Node.js / Express / DB) │ 286 tests │ 286      │ 0      │
 │ Client (React / Vitest / Axe)   │ 98 tests  │ 98       │ 0      │
 │ Analytics (Python / FastAPI)    │ 36 tests  │ 36       │ 0      │
-│ TOTAL                           │ 371 tests │ 371      │ 0      │
+│ TOTAL                           │ 420 tests │ 420      │ 0      │
 └─────────────────────────────────┴───────────┴──────────┴────────┘
 ```
 
